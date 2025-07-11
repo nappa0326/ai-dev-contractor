@@ -57,23 +57,6 @@ jobs:
                - Phase 2 (50%): MVPを実装し、ユーザーフィードバックを待つ
                - Phase 3 (80%): 完全実装を行い、最終レビューを待つ
                - Phase 4 (100%): 完成してPRを作成
-
-            2. 各フェーズ完了時は必ず以下を実行：
-               - コメントに `@claude-review-needed` タグを含める
-               - Phase番号を明記する
-               - ユーザーの承認を待つ
-          
-          # Optional: Allow Claude to run specific commands
-          # allowed_tools: "Bash(npm install),Bash(npm run build),Bash(npm run test:*),Bash(npm run lint:*)"
-          
-          # Custom instructions for interactive development process
-          custom_instructions: |
-            ## 開発プロセス
-            1. 新規プロジェクト開始時は、以下のフェーズに従って開発を進めてください：
-               - Phase 1 (20%): 設計書を作成し、ユーザーレビューを待つ
-               - Phase 2 (50%): MVPを実装し、ユーザーフィードバックを待つ
-               - Phase 3 (80%): 完全実装を行い、最終レビューを待つ
-               - Phase 4 (100%): 完成してPRを作成
             
             2. 各レビューポイントで：
                - PRコメントとして進捗報告を投稿
