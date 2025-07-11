@@ -50,7 +50,7 @@ jobs:
           # assignee_trigger: "claude-bot"
           
           # Custom instructions for phased development
-          append_system_prompt: |
+          custom_instructions: |
             ## 開発プロセス
             1. 新規プロジェクト開始時は、以下のフェーズに従って開発を進めてください：
                - Phase 1 (20%): 設計書を作成し、ユーザーレビューを待つ
@@ -72,6 +72,10 @@ jobs:
                - PRコメントで「@claude」メンションされた場合は修正を実施
                - 同一ブランチで作業を継続
                - 新しいブランチは作成しない
+            
+            5. 重要：
+               - 既存のブランチがある場合は必ずそれを使用する
+               - Phase間で新しいブランチを作成しない
           
           # Optional: Custom environment variables for Claude
           # claude_env: |
