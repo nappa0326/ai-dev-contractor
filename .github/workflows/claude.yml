@@ -50,7 +50,7 @@ jobs:
           # assignee_trigger: "claude-bot"
           
           # Custom instructions for phased development
-          custom_instructions: |
+          append_system_prompt: |
             ## 開発プロセス
             1. 新規プロジェクト開始時は、以下のフェーズに従って開発を進めてください：
                - Phase 1 (20%): 設計書を作成し、ユーザーレビューを待つ
