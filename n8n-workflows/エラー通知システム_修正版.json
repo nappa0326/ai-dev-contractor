@@ -1,0 +1,48 @@
+{
+  "name": "エラー通知システム（手動テスト可能版）",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0],
+      "id": "manual-trigger",
+      "name": "Manual Trigger (Test Only)"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "slackApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"channel\": \"C094LNGF8H5\",\n  \"text\": \"⚠️ ワークフローエラーが発生しました\",\n  \"blocks\": [\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"*ワークフロー名:* {{ $json.workflow?.name || 'テスト実行' }}\\n*エラーメッセージ:* {{ $json.execution?.error?.message || $json.error || 'エラー詳細なし' }}\\n*実行ID:* {{ $json.execution?.id || 'N/A' }}\"\n      }\n    }\n  ]\n}"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, 0],
+      "id": "slack-notify-node",  
+      "name": "Slack Notification",
+      "credentials": {
+        "slackApi": {
+          "id": "aHC6dGXUUgCWfDpJ",
+          "name": "Slack account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger (Test Only)": {
+      "main": [[{
+        "node": "Slack Notification",
+        "type": "main",
+        "index": 0
+      }]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

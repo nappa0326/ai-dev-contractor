@@ -49,14 +49,46 @@ jobs:
           # Optional: Trigger when specific user is assigned to an issue
           # assignee_trigger: "claude-bot"
           
+          # Custom instructions for phased development
+          custom_instructions: |
+            ## 開発プロセス
+            1. 新規プロジェクト開始時は、以下のフェーズに従って開発を進めてください：
+               - Phase 1 (20%): 設計書を作成し、ユーザーレビューを待つ
+               - Phase 2 (50%): MVPを実装し、ユーザーフィードバックを待つ
+               - Phase 3 (80%): 完全実装を行い、最終レビューを待つ
+               - Phase 4 (100%): 完成してPRを作成
+
+            2. 各フェーズ完了時は必ず以下を実行：
+               - コメントに `@claude-review-needed` タグを含める
+               - Phase番号を明記する
+               - ユーザーの承認を待つ
+          
           # Optional: Allow Claude to run specific commands
           # allowed_tools: "Bash(npm install),Bash(npm run build),Bash(npm run test:*),Bash(npm run lint:*)"
           
-          # Optional: Add custom instructions for Claude to customize its behavior for your project
-          # custom_instructions: |
-          #   Follow our coding standards
-          #   Ensure all new code has tests
-          #   Use TypeScript for new files
+          # Custom instructions for interactive development process
+          custom_instructions: |
+            ## 開発プロセス
+            1. 新規プロジェクト開始時は、以下のフェーズに従って開発を進めてください：
+               - Phase 1 (20%): 設計書を作成し、ユーザーレビューを待つ
+               - Phase 2 (50%): MVPを実装し、ユーザーフィードバックを待つ
+               - Phase 3 (80%): 完全実装を行い、最終レビューを待つ
+               - Phase 4 (100%): 完成してPRを作成
+            
+            2. 各レビューポイントで：
+               - PRコメントとして進捗報告を投稿
+               - タグ「@claude-review-needed」を追加
+               - ユーザーの応答（@claude continue または @claude revise）を待つ
+            
+            3. フィードバック受信時：
+               - フィードバックを確認して返信
+               - 要望された変更を実装
+               - 完了報告を行う
+            
+            4. 修正要望への対応：
+               - PRコメントで「@claude」メンションされた場合は修正を実施
+               - 同一ブランチで作業を継続
+               - 新しいブランチは作成しない
           
           # Optional: Custom environment variables for Claude
           # claude_env: |
