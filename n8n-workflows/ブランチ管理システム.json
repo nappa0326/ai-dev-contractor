@@ -3,37 +3,71 @@
   "nodes": [
     {
       "parameters": {
-        "url": "https://api.github.com/repos/ai-development-company/projects/comments/={{ $json.comment_id }}",
+        "path": "branch-check",
+        "options": {
+          "responseData": "allEntries"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1180,
+        220
+      ],
+      "id": "02abd739-0c29-441b-b92b-e088ee8f8272",
+      "name": "Webhook Trigger",
+      "webhookId": "branch-management-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// WebhookからのデータとGitHub PR URLの処理\nconst input = $json;\n\n// PR URLからowner, repo, pull番号を抽出\nlet owner, repo, pullNumber, commentId;\n\nif (input.pr_url) {\n  const urlMatch = input.pr_url.match(/github\\.com\\/([^\\/]+)\\/([^\\/]+)\\/pull\\/(\\d+)/);\n  if (urlMatch) {\n    owner = urlMatch[1];\n    repo = urlMatch[2];\n    pullNumber = urlMatch[3];\n  }\n}\n\n// コメントIDの処理\ncommentId = input.comment_id;\n\n// Issue番号の処理（PRとIssueで番号が異なる場合）\nconst issueNumber = input.issue_number || pullNumber;\n\nreturn {\n  owner: owner || 'ai-development-company',\n  repo: repo || 'projects',\n  pullNumber,\n  commentId,\n  issueNumber,\n  originalData: input\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -980,
+        220
+      ],
+      "id": "f31b32f2-b26a-4399-928e-36f3c93be446",
+      "name": "Process Webhook Data"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.github.com/repos/{{ $json.owner }}/{{ $json.repo }}/issues/comments/{{ $json.commentId }}",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "githubApi",
-        "options": {}
+        "options": {
+          "response": {
+            "response": {}
+          }
+        }
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        0,
-        0
+        -760,
+        220
       ],
-      "id": "get-comment-node",
+      "id": "6f2cbfd3-297b-4ace-80f4-06291108dfb9",
       "name": "Get PR Comment",
       "credentials": {
         "githubApi": {
-          "id": "abc123",
-          "name": "GitHub API"
+          "id": "pY9qy7slGFPBmR5S",
+          "name": "GitHub account"
         }
       }
     },
     {
       "parameters": {
-        "jsCode": "// Extract issue number from comment\nconst comment = $json.body;\nconst issueMatch = comment.match(/issue-(\\d+)/i);\nconst issueNumber = issueMatch ? issueMatch[1] : null;\n\n// Extract phase information\nconst phaseMatch = comment.match(/Phase\\s+(\\d)/i);\nconst phaseNumber = phaseMatch ? parseInt(phaseMatch[1]) : null;\n\n// Check if this is a claude-review-needed comment\nconst isReviewNeeded = comment.includes('@claude-review-needed');\n\n// Extract branch name if mentioned\nconst branchMatch = comment.match(/branch:\\s*([\\w\\/-]+)/i);\nconst mentionedBranch = branchMatch ? branchMatch[1] : null;\n\nreturn {\n  issueNumber,\n  phaseNumber,\n  isReviewNeeded,\n  mentionedBranch,\n  originalComment: comment\n};"
+        "jsCode": "// Extract issue number from comment\nconst comment = $json.body || '';\nconst issueMatch = comment.match(/issue-(\\d+)/i);\nconst issueNumber = issueMatch ? issueMatch[1] : $('Process Webhook Data').item.json.issueNumber;\n\n// Extract phase information\nconst phaseMatch = comment.match(/Phase\\s+(\\d)/i);\nconst phaseNumber = phaseMatch ? parseInt(phaseMatch[1]) : null;\n\n// Check if this is a claude-review-needed comment\nconst isReviewNeeded = comment.includes('@claude-review-needed');\n\n// Extract branch name if mentioned\nconst branchMatch = comment.match(/branch:\\s*([\\w\\/-]+)/i);\nconst mentionedBranch = branchMatch ? branchMatch[1] : null;\n\n// Pass through owner and repo\nconst owner = $('Process Webhook Data').item.json.owner;\nconst repo = $('Process Webhook Data').item.json.repo;\n\nreturn {\n  owner,\n  repo,\n  issueNumber,\n  phaseNumber,\n  isReviewNeeded,\n  mentionedBranch,\n  originalComment: comment\n};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        220,
-        0
+        -540,
+        220
       ],
-      "id": "parse-comment-node",
+      "id": "92ea1302-55a8-4077-8877-4d35538e3af4",
       "name": "Parse Comment"
     },
     {
@@ -62,45 +96,64 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        440,
-        0
+        -320,
+        420
       ],
-      "id": "check-review-node",
+      "id": "5f51472f-262f-4a53-90b7-d452ed1598b3",
       "name": "Is Review Needed?"
     },
     {
       "parameters": {
-        "url": "https://api.github.com/repos/ai-development-company/projects/branches",
+        "url": "=https://api.github.com/repos/{{ $json.owner }}/{{ $json.repo }}/branches",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "githubApi",
-        "options": {}
+        "options": {
+          "response": {
+            "response": {}
+          }
+        }
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        660,
-        -100
+        -100,
+        120
       ],
-      "id": "list-branches-node",
+      "id": "ddb35aa4-6c89-4cec-805a-3f717c689bf9",
       "name": "List All Branches",
       "credentials": {
         "githubApi": {
-          "id": "abc123",
-          "name": "GitHub API"
+          "id": "pY9qy7slGFPBmR5S",
+          "name": "GitHub account"
         }
       }
     },
     {
       "parameters": {
-        "jsCode": "// Get issue number and existing branches\nconst issueNumber = $input.all()[0].json.issueNumber;\nconst branches = $input.all()[1].json;\nconst phaseNumber = $input.all()[0].json.phaseNumber;\nconst mentionedBranch = $input.all()[0].json.mentionedBranch;\n\n// Find branches for this issue\nconst issueBranches = branches.filter(branch => \n  branch.name.includes(`issue-${issueNumber}`)\n);\n\n// Check phase continuity\nlet warnings = [];\nlet errors = [];\n\nif (issueBranches.length === 0 && phaseNumber > 1) {\n  errors.push(`⚠️ Phase ${phaseNumber}が開始されましたが、issue-${issueNumber}用のブランチが見つかりません！`);\n} else if (issueBranches.length > 1) {\n  warnings.push(`📌 issue-${issueNumber}に複数のブランチが存在します: ${issueBranches.map(b => b.name).join(', ')}`);\n}\n\nif (mentionedBranch && issueBranches.length > 0) {\n  const correctBranch = issueBranches[0].name;\n  if (mentionedBranch !== correctBranch) {\n    warnings.push(`🔄 報告されたブランチ(${mentionedBranch})と実際のブランチ(${correctBranch})が異なります`);\n  }\n}\n\nreturn {\n  issueNumber,\n  phaseNumber,\n  existingBranches: issueBranches.map(b => b.name),\n  branchCount: issueBranches.length,\n  warnings,\n  errors,\n  shouldAlert: errors.length > 0 || warnings.length > 0\n};"
+        "mode": "combine",
+        "joinMode": "enrichInput2",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        100,
+        -80
+      ],
+      "id": "7bc4aedd-43fc-4aa7-9c8d-24a873cace02",
+      "name": "Merge Data"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get merged data\nconst issueNumber = $json.issueNumber;\nconst phaseNumber = $json.phaseNumber;\nconst mentionedBranch = $json.mentionedBranch;\nconst owner = $json.owner;\nconst repo = $json.repo;\n\n// Get branches array - handle both array and single item\nlet branches = [];\nif ($input.all()[0].json) {\n  // If branches is directly in json\n  if (Array.isArray($input.all()[0].json)) {\n    branches = $input.all()[0].json;\n  } else if ($input.all()[0].json.branches) {\n    branches = $input.all()[0].json.branches;\n  }\n}\n\n// Find branches for this issue\nconst issueBranches = branches.filter(branch => \n  branch.name && branch.name.includes(`issue-${issueNumber}`)\n);\n\n// Check phase continuity\nlet warnings = [];\nlet errors = [];\n\nif (issueBranches.length === 0 && phaseNumber > 1) {\n  errors.push(`⚠️ Phase ${phaseNumber}が開始されましたが、issue-${issueNumber}用のブランチが見つかりません！`);\n} else if (issueBranches.length > 1) {\n  warnings.push(`📌 issue-${issueNumber}に複数のブランチが存在します: ${issueBranches.map(b => b.name).join(', ')}`);\n}\n\nif (mentionedBranch && issueBranches.length > 0) {\n  const correctBranch = issueBranches[0].name;\n  if (mentionedBranch !== correctBranch) {\n    warnings.push(`🔄 報告されたブランチ(${mentionedBranch})と実際のブランチ(${correctBranch})が異なります`);\n  }\n}\n\nreturn {\n  owner,\n  repo,\n  issueNumber,\n  phaseNumber,\n  existingBranches: issueBranches.map(b => b.name),\n  branchCount: issueBranches.length,\n  warnings,\n  errors,\n  shouldAlert: errors.length > 0 || warnings.length > 0\n};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        880,
-        0
+        320,
+        -80
       ],
-      "id": "check-continuity-node",
+      "id": "f25cd353-fa70-41ce-9b8c-8d2ccec041b1",
       "name": "Check Branch Continuity"
     },
     {
@@ -129,10 +182,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        1100,
-        0
+        540,
+        -80
       ],
-      "id": "should-alert-node",
+      "id": "591f213c-ac91-4059-a530-0c8985af239d",
       "name": "Should Alert?"
     },
     {
@@ -149,10 +202,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1320,
+        800,
         -100
       ],
-      "id": "slack-alert-node",
+      "id": "9037a638-8dd8-4edb-b5b1-3bc1708e6bbf",
       "name": "Send Slack Alert",
       "credentials": {
         "slackApi": {
@@ -164,7 +217,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://api.github.com/repos/ai-development-company/projects/issues/{{ $json.issueNumber }}/comments",
+        "url": "=https://api.github.com/repos/{{ $json.owner }}/{{ $json.repo }}/issues/{{ $json.issueNumber }}/comments",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "githubApi",
         "sendBody": true,
@@ -175,20 +228,66 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1320,
-        100
+        800,
+        -240
       ],
-      "id": "github-comment-node",
+      "id": "8a7cc718-0b45-4d6c-923e-f58dceb636d8",
       "name": "Add GitHub Comment",
       "credentials": {
         "githubApi": {
-          "id": "abc123",
-          "name": "GitHub API"
+          "id": "pY9qy7slGFPBmR5S",
+          "name": "GitHub account"
         }
       }
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1240,
+        440
+      ],
+      "id": "e4b77abb-3539-4bfe-88cf-419e90be54bf",
+      "name": "Respond to Webhook"
     }
   ],
+  "pinData": {},
   "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Process Webhook Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Webhook Data": {
+      "main": [
+        [
+          {
+            "node": "Get PR Comment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Get PR Comment": {
       "main": [
         [
@@ -207,6 +306,11 @@
             "node": "Is Review Needed?",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Merge Data",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -220,21 +324,27 @@
             "index": 0
           }
         ],
-        []
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "List All Branches": {
       "main": [
         [
           {
-            "node": "Check Branch Continuity",
+            "node": "Merge Data",
             "type": "main",
             "index": 1
           }
         ]
       ]
     },
-    "Parse Comment": {
+    "Merge Data": {
       "main": [
         [
           {
@@ -270,12 +380,46 @@
             "index": 0
           }
         ],
-        []
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Slack Alert": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add GitHub Comment": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1"
-  }
+  },
+  "versionId": "8bbbc238-8290-48c4-8b75-076cacd1d91d",
+  "meta": {
+    "instanceId": "b9ad821e1bac462e0829b0fcfa0ee54572f5b3a4dad3925c8cb3c5dae1bcef22"
+  },
+  "id": "lmjAChibrbVfpUWR",
+  "tags": []
 }
