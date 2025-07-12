@@ -1,0 +1,257 @@
+{
+  "name": "Github PR監視システム",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "github-pr-comments",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "642d1ab5-80d6-4b19-925d-38cd8adb7e0e",
+      "name": "Webhook",
+      "webhookId": "d362f55e-24bd-4022-acca-cea756d29964"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "  // PRコメントの内容を解析\n  const eventType = $json.body.action; // created, edited, deleted\n  const comment = $json.body.comment?.body || '';\n  const prNumber = $json.body.issue?.number || $json.body.pull_request?.number;\n  const htmlUrl = $json.body.comment?.html_url || '';\n  const commenter = $json.body.comment?.user?.login || '';\n\n  // @claude-review-neededタグの検出\n  const hasReviewTag = comment.includes('@claude-review-needed');\n\n  // フェーズの検出\n  const phaseMatch = comment.match(/Phase (\\d)/);\n  const phase = phaseMatch ? phaseMatch[1] : null;\n\n  // Claudeの完了メッセージの検出\n  const isClaudeFinished = commenter === 'claudeaide[bot]' &&\n                          comment.includes('Claude finished') &&\n                          eventType === 'created';\n\n  // レビューが必要かどうかを判定\n  const needsReview = hasReviewTag &&\n    (eventType === 'created' ||\n     (eventType === 'edited' && comment.includes('Claude finished')));\n\n  // 通知タイプの判定\n  const notificationType = isClaudeFinished ? 'completion' :\n                          needsReview ? 'review' :\n                          'none';\n\n  return {\n    json: {\n      notification_type: notificationType,\n      needs_review: needsReview,\n      is_completed: isClaudeFinished,\n      pr_number: prNumber,\n      phase: phase,\n      comment: comment,\n      html_url: htmlUrl,\n      event_type: eventType,\n      commenter: commenter\n    }\n  };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "98f6b085-3151-47af-9b44-4d8caddfd425",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a884fec7-5b9a-47e9-bc70-03a66eb6f577",
+              "leftValue": "={{ $json.notification_type }}",
+              "rightValue": "none",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        0
+      ],
+      "id": "7e8e3f38-0146-446f-bb93-8e545120ab72",
+      "name": "Filter"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.notification_type }}",
+                    "rightValue": "review",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "95b31a38-65a1-4407-8f5d-289198fc7d6d"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "review"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "34d54dc6-61af-4930-a5b4-6ef1eaeabdc0",
+                    "leftValue": "={{ $json.notification_type }}",
+                    "rightValue": "completion",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "completion"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        660,
+        0
+      ],
+      "id": "43fec369-d758-4f2e-926e-0c23cf51676b",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C094LNGF8H5",
+          "mode": "id"
+        },
+        "messageType": "block",
+        "blocksUi": "=   {\n     \"blocks\": [\n       {\n         \"type\": \"header\",\n         \"text\": {\n           \"type\": \"plain_text\",\n           \"text\": \"🔔 レビューが必要です\"\n         }\n       },\n       {\n         \"type\": \"section\",\n         \"text\": {\n           \"type\": \"mrkdwn\",\n           \"text\": \"*PR #{{ $json.pr_number }}* でレビューが必要です\\n*フェーズ*: Phase {{ $json.phase }}\\n*GitHub*: <{{ $json.html_url }}|コメントを確認>\"\n         }\n       },\n       {\n         \"type\": \"divider\"\n       },\n       {\n         \"type\": \"section\",\n         \"text\": {\n           \"type\": \"plain_text\",\n           \"text\": \"アクションを選択してください：\"\n         }\n       },\n       {\n         \"type\": \"actions\",\n         \"elements\": [\n           {\n             \"type\": \"button\",\n             \"text\": {\n               \"type\": \"plain_text\",\n               \"text\": \"✅ 承認して続行\"\n             },\n             \"style\": \"primary\",\n             \"value\": \"continue_{{ $json.pr_number }}\"\n           },\n           {\n             \"type\": \"button\",\n             \"text\": {\n               \"type\": \"plain_text\",\n               \"text\": \"📝 修正を依頼\"\n             },\n             \"value\": \"revise_{{ $json.pr_number }}\"\n           }\n         ]\n       }\n     ]\n   }",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        920,
+        -120
+      ],
+      "id": "cf156cf2-fd7a-4edf-9b8f-8f7043da1cd6",
+      "name": "Send a message - Review",
+      "webhookId": "f7648295-fcd6-41fa-bb20-d942c1161b4d",
+      "credentials": {
+        "slackApi": {
+          "id": "aHC6dGXUUgCWfDpJ",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C094LNGF8H5",
+          "mode": "id"
+        },
+        "messageType": "block",
+        "blocksUi": "=  {\n    \"blocks\": [\n      {\n        \"type\": \"header\",\n        \"text\": {\n          \"type\": \"plain_text\",\n          \"text\": \"? 開発が完了しました\"\n        }\n      },\n      {\n        \"type\": \"section\",\n        \"text\": {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*PR #{{ $json.pr_number }}* の開発が完了しました\\n*フェーズ*: Phase {{ $json.phase }}\\n*GitHub*: <{{ $json.html_url }}|完了コメントを確認>\"\n        }\n      },\n      {\n        \"type\": \"divider\"\n      },\n      {\n        \"type\": \"section\",\n        \"text\": {\n          \"type\": \"mrkdwn\",\n          \"text\": \"Claudeが作業を完了しました。実装内容をご確認ください。\"\n        }\n      }\n    ]\n  }",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        920,
+        120
+      ],
+      "id": "697ebc3d-6c53-44d3-b3d1-bf897b9f4f4e",
+      "name": "Send a message - Completion",
+      "webhookId": "f7648295-fcd6-41fa-bb20-d942c1161b4d",
+      "credentials": {
+        "slackApi": {
+          "id": "aHC6dGXUUgCWfDpJ",
+          "name": "Slack account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Send a message - Review",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a message - Completion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "V00wqOQfw5vs8CVQ"
+  },
+  "versionId": "c1bea7e1-4931-4863-ae59-e2117d79b52e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b9ad821e1bac462e0829b0fcfa0ee54572f5b3a4dad3925c8cb3c5dae1bcef22"
+  },
+  "id": "9u9VFiVmuUAciUtW",
+  "tags": []
+}

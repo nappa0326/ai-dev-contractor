@@ -1,0 +1,191 @@
+{
+  "name": "Slack案件相談システム",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "// 受信データを取得\nconst event = $input.first().json;\n\n// デバッグ情報\nconsole.log('=== イベントタイプ ===');\nconsole.log('type:', event.type);\nconsole.log('subtype:', event.subtype);\n\n// message_changedイベントは無視\nif (event.type === 'message' && event.subtype === 'message_changed') {\n  console.log('message_changedイベントを無視');\n  return [];\n}\n\n// 通常のメッセージイベントのみ処理\nif (event.type !== 'message' || event.subtype) {\n  console.log('通常のメッセージではないため無視');\n  return [];\n}\n\n// テキストの確認\nif (!event.text) {\n  console.log('テキストがありません');\n  return [];\n}\n\n// ボット自身のメッセージは無視\nif (event.bot_id) {\n  console.log('ボットのメッセージを無視');\n  return [];\n}\n\n// メンション検出\nconst botUserId = 'U09514QT0EQ'; // あなたのボットのユーザーID\nconst mentionPattern = new RegExp(`<@${botUserId}>`, 'g');\nconst hasMention = mentionPattern.test(event.text);\n\n// スレッド判定\nconst isInThread = !!(event.thread_ts && event.thread_ts !== event.ts);\n\nconsole.log('=== 処理判定 ===');\nconsole.log('hasMention:', hasMention);\nconsole.log('isInThread:', isInThread);\nconsole.log('thread_ts:', event.thread_ts);\n\n// 処理条件：\n// 1. メンションがある場合（どこでも）\n// 2. スレッド内のメッセージ（メンション不要）\nconst shouldProcess = hasMention || isInThread;\n\nif (!shouldProcess) {\n  console.log('処理条件に合わないため無視');\n  return [];\n}\n\nconst cleanedText = event.text.replace(mentionPattern, '').trim();\n\n// ===== ここから追加部分 =====\n// 発注意図の検知\nconst TRIGGER_PHRASES = [\n  \"発注\",\n  \"見積\",\n  \"これでお願い\",\n  \"まとめて\"\n];\n\nconst shouldSummarize = TRIGGER_PHRASES.some(phrase => \n  cleanedText.toLowerCase().includes(phrase)\n);\n\nconsole.log('=== 発注意図検知 ===');\nconsole.log('shouldSummarize:', shouldSummarize);\nconsole.log('検出されたテキスト:', cleanedText);\n// ===== 追加部分ここまで =====\n\n// データを返す\nreturn [{\n  json: {\n    userInput: cleanedText,\n    userId: event.user,\n    channelId: event.channel,\n    messageTs: event.ts,\n    threadTs: event.thread_ts || event.ts,\n    isThread: isInThread,\n    hasMention: hasMention,\n    shouldSummarize: shouldSummarize  // この行を追加\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ],
+      "id": "64b7df1a-7257-4901-857a-a43abc0098c2",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.userInput }}",
+        "options": {
+          "systemMessage": "あなたは「AI Contractor」という名前のAI請負開発者です。\n人間の開発者ではなく、AI自身が開発業務を請け負います。\n\n【自己紹介】\n「AI Contractorです。開発案件を請け負うAIです。」\n\n【重要な応答ルール】\n- 簡潔に要点のみ回答（3-5文程度）\n- 「私（AI）が開発します」という立場を明確に\n- 専門用語は最小限に\n\n【発注意図への対応】\nメッセージに「発注」「見積」「これでお願い」「まとめて」が含まれる場合：\n1. 要件を簡潔にまとめる\n2. 発注コマンドを提示する\n\nまとめ形式：\n📋 要件まとめ\n・プロジェクト: [名称]\n・機能: [主要機能]\n・予算: [金額/未定]\n・納期: [日付/未定]\n\n発注コマンド:\n/order-project \"プロジェクト名\" \"要件\" 予算 納期\n\n【回答例】\n「ECサイト開発ですね。AI の私が2週間で構築可能です。概算150万円〜」\n「その機能なら、3日で実装できます。詳細仕様をお聞かせください」\n「発注承知しました。要件をまとめて発注コマンドを用意します」\n\n常に「AIが直接開発する」ことを意識して回答してください。"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        660,
+        0
+      ],
+      "id": "264c37d7-5d90-4746-91ec-4b43093bb669",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-pro",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        600,
+        200
+      ],
+      "id": "28357a4d-4be6-4904-a4a2-796ab6d37182",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "Xqt0r9XkegjAeluD",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "trigger": [
+          "message"
+        ],
+        "watchWorkspace": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.slackTrigger",
+      "typeVersion": 1,
+      "position": [
+        220,
+        0
+      ],
+      "id": "a6a56487-cba2-466f-804b-3e48a04aae5a",
+      "name": "Slack Trigger",
+      "webhookId": "8873f8b3-4c6d-437e-be50-4ed1698d8731",
+      "credentials": {
+        "slackApi": {
+          "id": "aHC6dGXUUgCWfDpJ",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Code').item.json.threadTs }}",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        740,
+        200
+      ],
+      "id": "b6631124-21f5-49d3-9d91-ca446a0795da",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "slackApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"channel\": \"{{ $node['Code'].json.channelId }}\",\n  \"text\": {{ JSON.stringify($node['AI Agent'].json.output) }},\n  \"thread_ts\": \"{{ $node['Code'].json.threadTs }}\",\n  \"reply_broadcast\": false\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1040,
+        0
+      ],
+      "id": "eb169ac4-f4a5-4640-90f0-ef04d6c10953",
+      "name": "HTTP Request",
+      "credentials": {
+        "slackApi": {
+          "id": "aHC6dGXUUgCWfDpJ",
+          "name": "Slack account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack Trigger": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "V00wqOQfw5vs8CVQ"
+  },
+  "versionId": "8185d148-6acd-4213-816a-582fa0054e47",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b9ad821e1bac462e0829b0fcfa0ee54572f5b3a4dad3925c8cb3c5dae1bcef22"
+  },
+  "id": "xj4qS7Me8cxVl3As",
+  "tags": []
+}

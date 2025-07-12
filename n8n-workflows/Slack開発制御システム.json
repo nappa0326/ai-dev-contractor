@@ -1,0 +1,406 @@
+{
+  "name": "Slack開発制御システム",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "slack-interactive",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "8449d585-675a-492b-b7ed-33ff5f99ff66",
+      "name": "Webhook",
+      "webhookId": "adedd6eb-5fba-4eba-8927-98e528e44fd6"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "  // Slackからのインタラクティブペイロードを解析\n  let payload;\n  try {\n    payload = JSON.parse($json.body.payload);\n  } catch (error) {\n    return {\n      json: {\n        error: 'Invalid payload format',\n        raw_body: $json.body\n      }\n    };\n  }\n\n  // ペイロードタイプで処理を分岐\n  if (payload.type === 'block_actions') {\n    // ボタンクリック時の処理\n    const action = payload.actions[0];\n    const actionValue = action.value;\n    const [actionType, prNumber] = actionValue.split('_');\n\n    return {\n      json: {\n        type: 'button_click',\n        action_type: actionType,\n        pr_number: prNumber,\n        user: payload.user.name,\n        user_id: payload.user.id,\n        trigger_id: payload.trigger_id,\n        response_url: payload.response_url,\n        channel: payload.channel.id,\n        original_message_ts: payload.message.ts,\n        team_id: payload.team.id\n      }\n    };\n  } else if (payload.type === 'view_submission') {\n    // モーダル送信時の処理\n    const privateMetadata = JSON.parse(payload.view.private_metadata);\n    const reviseComment = payload.view.state.values.revise_block.revise_comment.value;\n\n    return {\n      json: {\n        type: 'modal_submit',\n        pr_number: privateMetadata.pr_number,\n        revise_comment: reviseComment,\n        user: payload.user.name,\n        user_id: payload.user.id,\n        channel: privateMetadata.channel,\n        original_message_ts: privateMetadata.message_ts\n      }\n    };\n  }\n\n  return {\n    json: {\n      error: 'Unknown payload type',\n      type: payload.type\n    }\n  };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "ac1a1e3d-2352-4352-bfde-7a03a2f8ac8a",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "operation": "createComment",
+        "owner": {
+          "__rl": true,
+          "value": "nappa0326",
+          "mode": "name"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "ai-development-company",
+          "mode": "name"
+        },
+        "issueNumber": "={{ $json.pr_number }}",
+        "body": "={{ $json.action_type === 'continue' ? '@claude continue\\n\\n（' + $json.user + 'さんがSlackでボタンをクリックしました）' : '@claude revise: Slackからの修正依頼があります\\n\\n（' + $json.user + 'さんがSlackでボタンをクリックしました）' }}"
+      },
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1.1,
+      "position": [
+        680,
+        200
+      ],
+      "id": "19e85525-8f63-4767-b538-3c9826f262cc",
+      "name": "Create a comment on an issue",
+      "webhookId": "dda15019-754c-4d87-bab8-6af665492646",
+      "credentials": {
+        "githubApi": {
+          "id": "pY9qy7slGFPBmR5S",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://slack.com/api/chat.update",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "slackApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n    \"channel\": \"{{ $node['Code'].json.channel }}\",\n    \"ts\": \"{{ $node['Code'].json.original_message_ts }}\",\n    \"text\": \"{{ $node['Code'].json.action_type === 'continue' ? '承認されました' : '修正依頼を送信しました' }}\",\n    \"blocks\": [\n      {\n        \"type\": \"section\",\n        \"text\": {\n          \"type\": \"mrkdwn\",\n          \"text\": \"{{ $node['Code'].json.action_type === 'continue' ? ' *承認されました*\\\\n\\\\nGitHubに`@claude continue` コメントを追加しました。' : '*修正依頼を送信しました*\\\\n\\\\nGitHubに修正依頼コメントを追加しました。' }}\"\n        }\n      },\n      {\n        \"type\": \"context\",\n        \"elements\": [\n          {\n            \"type\": \"mrkdwn\",\n            \"text\": \"処理者: <@{{ $node['Code'].json.user_id }}> | PR: #{{ $node['Code'].json.pr_number }}\"\n          }\n        ]\n      }\n    ]\n  }\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        900,
+        200
+      ],
+      "id": "f4a81f6d-20c9-499f-8e41-d33af9e2a680",
+      "name": "HTTP Request",
+      "credentials": {
+        "slackApi": {
+          "id": "aHC6dGXUUgCWfDpJ",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "329429be-044b-4f32-95ad-586d9b3e6a78",
+                    "leftValue": "={{ $json.type }}",
+                    "rightValue": "modal_submit",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "modal"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "b8bb60f6-be44-4650-9241-1febc066b125",
+                    "leftValue": "={{ $json.action_type }}",
+                    "rightValue": "revise",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "revise"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.type }}",
+                    "rightValue": "button_click",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "019cf99f-e898-498d-85ef-fd778cf3eb0d"
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        420,
+        0
+      ],
+      "id": "2574dfc5-b697-4490-97c9-ca4ae2d0f514",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "operation": "createComment",
+        "owner": {
+          "__rl": true,
+          "value": "nappa0326",
+          "mode": "name"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "ai-development-company",
+          "mode": "name"
+        },
+        "issueNumber": "={{ $json.pr_number }}",
+        "body": "=  @claude revise\n\n  {{ $json.revise_comment }}\n\n  （{{ $json.user }}さんからSlack経由での修正依頼）"
+      },
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1.1,
+      "position": [
+        680,
+        -200
+      ],
+      "id": "414e39b1-f0bb-4ce6-932d-ee2a629f45b5",
+      "name": "Create a comment on an issue - Revise ",
+      "webhookId": "dda15019-754c-4d87-bab8-6af665492646",
+      "credentials": {
+        "githubApi": {
+          "id": "pY9qy7slGFPBmR5S",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://slack.com/api/views.open",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "slackApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "=  {\n    \"trigger_id\": \"{{ $json.trigger_id }}\",\n    \"view\": {\n      \"type\": \"modal\",\n      \"callback_id\": \"revise_modal\",\n      \"title\": {\n        \"type\": \"plain_text\",\n        \"text\": \"修正依頼\"\n      },\n      \"submit\": {\n        \"type\": \"plain_text\",\n        \"text\": \"送信\"\n      },\n      \"close\": {\n        \"type\": \"plain_text\",\n        \"text\": \"キャンセル\"\n      },\n      \"private_metadata\": \"{\\\"pr_number\\\":\\\"{{ $json.pr_number }}\\\",\\\"channel\\\":\\\"{{ $json.channel }}\\\",\\\"original_message_ts\\\":\\\"{{ $json.original_message_ts }}\\\"}\",\n      \"blocks\": [\n        {\n          \"type\": \"section\",\n          \"text\": {\n            \"type\": \"mrkdwn\",\n            \"text\": \"PR #{{ $json.pr_number }} への修正依頼内容を入力してください。\"\n          }\n        },\n        {\n          \"type\": \"input\",\n          \"block_id\": \"revise_block\",\n          \"element\": {\n            \"type\": \"plain_text_input\",\n            \"action_id\": \"revise_comment\",\n            \"multiline\": true,\n            \"placeholder\": {\n              \"type\": \"plain_text\",\n              \"text\": \"修正してほしい内容を具体的に記述してください...\"\n            }\n          },\n          \"label\": {\n            \"type\": \"plain_text\",\n            \"text\": \"修正内容\"\n          }\n        }\n      ]\n    }\n  }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        0
+      ],
+      "id": "e1762aa7-7a28-4228-801f-005eb37f25a4",
+      "name": "HTTP Request - Open Modal",
+      "credentials": {
+        "slackApi": {
+          "id": "aHC6dGXUUgCWfDpJ",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"response_action\": \"clear\"\n}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        900,
+        0
+      ],
+      "id": "b528fbbd-c582-46ce-b12f-276829451cfe",
+      "name": "Respond to Webhook - To Slack"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://slack.com/api/chat.update",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "slackApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "=  {\n    \"channel\": \"{{ $json.channel }}\",\n    \"ts\": \"{{ $json.original_message_ts }}\",\n    \"text\": \"修正依頼を送信しました\",\n    \"blocks\": [\n      {\n        \"type\": \"section\",\n        \"text\": {\n          \"type\": \"mrkdwn\",\n          \"text\": \"📝 *修正依頼を送信しました*\\n\\nGitHubに修正依頼コメントを追加しました。\"\n        }\n      },\n      {\n        \"type\": \"section\",\n        \"text\": {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*修正内容:*\\n> {{ $json.revise_comment.replace(/\\n/g, '\\n> ') }}\"\n        }\n      },\n      {\n        \"type\": \"context\",\n        \"elements\": [\n          {\n            \"type\": \"mrkdwn\",\n            \"text\": \"処理者: <@{{ $json.user_id }}> | PR: #{{ $json.pr_number }}\"\n          }\n        ]\n      }\n    ]\n  }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        900,
+        -200
+      ],
+      "id": "d6f90a25-ef13-4112-a986-9a191290abad",
+      "name": "HTTP Request - Revice",
+      "credentials": {
+        "slackApi": {
+          "id": "aHC6dGXUUgCWfDpJ",
+          "name": "Slack account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a comment on an issue": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Create a comment on an issue - Revise ",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request - Open Modal",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create a comment on an issue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Open Modal": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook - To Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a comment on an issue - Revise ": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Revice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "V00wqOQfw5vs8CVQ"
+  },
+  "versionId": "91145e2d-45d3-4e9b-83dc-295f501085d4",
+  "meta": {
+    "instanceId": "b9ad821e1bac462e0829b0fcfa0ee54572f5b3a4dad3925c8cb3c5dae1bcef22"
+  },
+  "id": "yYWfNj9G5ktl0f82",
+  "tags": []
+}

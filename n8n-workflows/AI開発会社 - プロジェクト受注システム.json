@@ -1,0 +1,246 @@
+{
+  "name": "AI開発会社 - プロジェクト受注システム",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ai-company-order",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "ec934913-ff52-4cbf-9dd9-9021f8934a3c",
+      "name": "Webhook",
+      "webhookId": "dcd3be69-6266-41d5-b8df-21cf0e629cc1"
+    },
+    {
+      "parameters": {
+        "owner": {
+          "__rl": true,
+          "value": "nappa0326",
+          "mode": "name"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "ai-development-company",
+          "mode": "name"
+        },
+        "title": "={{ $('Webhook').item.json.body.project_name }} - AI自動開発案件",
+        "body": "=## プロジェクト発注情報\n\n**発注日時**: {{ new Date().toISOString() }}\n**プロジェクト名**: {{ $('Webhook').item.json.body.project_name }}\n**要件**: {{ $('Webhook').item.json.body.requirements }}\n**予算**: {{ $('Webhook').item.json.body.budget }}\n**期限**: {{ $('Webhook').item.json.body.deadline }}\n**優先度**: {{ $('Webhook').item.json.body.priority }}\n\n---\n\n## AI分析結果\n\n{{ $('AI Agent').item.json.output }}\n\n---\n\n## 開発指示\n\n@claude 上記の技術仕様書に基づいて、完全なプロジェクトを作成してください。\n\n### 成果物要件:\n1. 完全なソースコード\n2. README.md（セットアップ手順含む）\n3. 基本的なテストコード\n4. package.json/requirements.txt（依存関係）\n5. 基本的なAPI仕様書（該当する場合）\n\n### 品質基準:\n- コードは本番運用可能なレベル\n- セキュリティベストプラクティスに従う\n- レスポンシブデザイン対応（Webアプリの場合）\n- 基本的なエラーハンドリング実装\n\n### 技術スタック推奨:\nAI分析結果の推奨技術スタックを参考にしてください。\n\n完了時にはプルリクエストを作成し、デプロイ可能な状態で納品してください。",
+        "labels": [
+          {
+            "label": "ai-development"
+          },
+          {
+            "label": "auto-order"
+          }
+        ],
+        "assignees": [
+          {
+            "assignee": "nappa0326"
+          }
+        ]
+      },
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1.1,
+      "position": [
+        540,
+        0
+      ],
+      "id": "555d5757-b1ff-49f6-b35b-65c29a3348d7",
+      "name": "Create an issue",
+      "webhookId": "55d6a124-911e-4f45-8e0b-2d3b89186db2",
+      "alwaysOutputData": false,
+      "credentials": {
+        "githubApi": {
+          "id": "pY9qy7slGFPBmR5S",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C094LNGF8H5",
+          "mode": "id"
+        },
+        "text": "=🚀 新規プロジェクト受注！  **プロジェクト名**: {{ $('Webhook').item.json.body.project_name }} **予算**: {{ $('Webhook').item.json.body.budget }} **期限**: {{ $('Webhook').item.json.body.deadline }}  **GitHub Issue**: {{ $('Create an issue').item.json.html_url }}  Claude Code による自動開発を開始します。",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        740,
+        0
+      ],
+      "id": "1c071c7b-f85c-4aaf-ae43-618ba555155c",
+      "name": "Send a message",
+      "webhookId": "dfd7cac6-aa9f-41d3-b8cd-ac590944b823",
+      "credentials": {
+        "slackApi": {
+          "id": "aHC6dGXUUgCWfDpJ",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"success\",\n  \"message\": \"プロジェクトを受注いたしました\",\n  \"project_name\": \"{{ $('Webhook').item.json.project_name }}\",\n  \"github_issue\": \"{{ $('GitHub').item.json.html_url }}\",\n  \"issue_number\": \"{{ $('GitHub').item.json.number }}\",\n  \"estimated_completion\": \"{{ $('AI Agent').item.json.output.match(/工数見積もり[:\\\\s]*([^\\\\n]+)/)?.[1] || '2-4時間以内' }}\",\n  \"next_steps\": [\n    \"GitHub Issueが作成されました\",\n    \"Claude Codeによる自動開発が開始されます\",\n    \"完了時に自動通知をお送りします\"\n  ],\n  \"contact\": \"進捗は GitHub Issue で確認できます\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        940,
+        0
+      ],
+      "id": "13fc1abd-4530-4034-96f1-7b9a71c8bfb8",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=以下のプロジェクト情報を分析してください：\n\nプロジェクト名: {{ $json.body.project_name }}\n要件: {{ $json.body.requirements }}\n予算: {{ $json.body.budget }}\n期限: {{ $json.body.deadline }}\n優先度: {{ $json.body.priority }}\n連絡先: {{ $json.body.contact_info }}\n技術的希望: {{ $json.body.technical_preferences }}",
+        "options": {
+          "systemMessage": "あなたは経験豊富なプロジェクトマネージャーです。\n受信したプロジェクト要件を分析し、以下の形式で技術仕様書を作成してください：\n\n## 技術仕様書\n\n### 1. プロジェクト概要\n- プロジェクト名: {{ $json.project_name }}\n- 概要: 要件から読み取れる主要機能を簡潔に説明\n\n### 2. 推奨技術スタック\n- フロントエンド: 要件に最適な技術を選定\n- バックエンド: 適切なサーバー技術\n- データベース: データ要件に応じた選択\n- その他: 必要な追加技術\n\n### 3. 機能要件詳細\n- 主要機能の詳細リスト\n- 各機能の実装優先度\n\n### 4. 工数見積もり\n- 開発期間の見積もり\n- 人月換算での工数\n\n### 5. リスク分析\n- 技術的リスク\n- スケジュールリスク\n- 品質リスク\n\n### 6. 成功基準\n- 完成品の品質基準\n- テスト要件\n\n最後に、GitHub Issue用のタイトルと説明文をMarkdown形式で生成してください。"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        200,
+        0
+      ],
+      "id": "8998a0ab-35cc-443a-b5c8-0c4e4118e277",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-pro",
+        "options": {
+          "maxOutputTokens": 4096,
+          "temperature": 0.3
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        80,
+        220
+      ],
+      "id": "1f1777ac-ccb9-4b2e-8bee-a9331e510399",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "Xqt0r9XkegjAeluD",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.body.project_name + '_' + Date.now() }}",
+        "contextWindowLength": 30
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        240,
+        220
+      ],
+      "id": "75c71d0c-372b-4e6d-ad81-b158e78c0186",
+      "name": "Simple Memory"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Create an issue": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Create an issue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "V00wqOQfw5vs8CVQ"
+  },
+  "versionId": "ac359837-56d1-4505-9c79-519ea483493f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b9ad821e1bac462e0829b0fcfa0ee54572f5b3a4dad3925c8cb3c5dae1bcef22"
+  },
+  "id": "qO7oMI2Wfkyks2dK",
+  "tags": []
+}

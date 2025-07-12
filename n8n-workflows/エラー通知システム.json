@@ -5,8 +5,11 @@
       "parameters": {},
       "type": "n8n-nodes-base.errorTrigger",
       "typeVersion": 1,
-      "position": [0, 0],
-      "id": "error-trigger-node",
+      "position": [
+        440,
+        60
+      ],
+      "id": "aa75ec56-2727-4a9c-a393-aee3a1ce57fc",
       "name": "Error Trigger"
     },
     {
@@ -17,12 +20,16 @@
         "nodeCredentialType": "slackApi",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "{\n  \"channel\": \"C094LNGF8H5\",\n  \"text\": \"⚠️ ワークフローエラーが発生しました\",\n  \"blocks\": [\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"*ワークフロー名:* {{ $json.workflow.name }}\\n*エラーメッセージ:* {{ $json.execution.error.message }}\\n*実行ID:* {{ $json.execution.id }}\"\n      }\n    }\n  ]\n}"
+        "jsonBody": "{\n  \"channel\": \"C094LNGF8H5\",\n  \"text\": \"⚠️ ワークフローエラーが発生しました\",\n  \"blocks\": [\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"*ワークフロー名:* {{ $json.workflow.name }}\\n*エラーメッセージ:* {{ $json.execution.error.message }}\\n*実行ID:* {{ $json.execution.id }}\"\n      }\n    }\n  ]\n}",
+        "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [220, 0],
-      "id": "slack-notify-node",
+      "position": [
+        660,
+        60
+      ],
+      "id": "3933cf9f-fbc3-4f18-ba3b-fc82dea5f192",
       "name": "Slack Notification",
       "credentials": {
         "slackApi": {
@@ -32,17 +39,28 @@
       }
     }
   ],
+  "pinData": {},
   "connections": {
     "Error Trigger": {
-      "main": [[{
-        "node": "Slack Notification",
-        "type": "main",
-        "index": 0
-      }]]
+      "main": [
+        [
+          {
+            "node": "Slack Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
-  "active": true,
+  "active": false,
   "settings": {
     "executionOrder": "v1"
-  }
+  },
+  "versionId": "35e84607-21a6-4441-bf71-a299f32c0965",
+  "meta": {
+    "instanceId": "b9ad821e1bac462e0829b0fcfa0ee54572f5b3a4dad3925c8cb3c5dae1bcef22"
+  },
+  "id": "V00wqOQfw5vs8CVQ",
+  "tags": []
 }

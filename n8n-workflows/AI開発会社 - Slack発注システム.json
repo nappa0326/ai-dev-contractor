@@ -1,0 +1,131 @@
+{
+  "name": "AI開発会社 - Slack発注システム",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "slack-order",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "015ed08f-0f1a-492d-8b9e-beecf18dcf6d",
+      "name": "Webhook",
+      "webhookId": "b3989678-2800-455f-a5fd-313fe42c19a7"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Slack スラッシュコマンドのデータを解析\nconst slackData = $json.body;\nconst text = slackData.text || '';\n\n// より堅牢なクォート付き引数パーサー\nfunction parseQuotedArgs(text) {\n  const args = [];\n  let current = '';\n  let inQuotes = false;\n  let quoteChar = null; // \" または ' をサポート\n  \n  for (let i = 0; i < text.length; i++) {\n    const char = text[i];\n    const prevChar = i > 0 ? text[i-1] : null;\n    \n    // クォート開始/終了の判定\n    if ((char === '\"' || char === \"'\") && prevChar !== '\\\\') {\n      if (!inQuotes) {\n        inQuotes = true;\n        quoteChar = char;\n      } else if (char === quoteChar) {\n        inQuotes = false;\n        quoteChar = null;\n      } else {\n        current += char;\n      }\n    }\n    // スペースでの区切り（クォート外のみ）\n    else if (char === ' ' && !inQuotes) {\n      if (current.trim()) {\n        args.push(current.trim());\n        current = '';\n      }\n      // 連続スペースをスキップ\n      while (i + 1 < text.length && text[i + 1] === ' ') {\n        i++;\n      }\n    }\n    // 通常文字\n    else {\n      current += char;\n    }\n  }\n  \n  // 最後の引数を追加\n  if (current.trim()) {\n    args.push(current.trim());\n  }\n  \n  return args;\n}\n\n// テキストを解析\nconst args = parseQuotedArgs(text);\n\n// 引数の検証とデフォルト値設定\nconst projectName = (args[0] && args[0] !== '') ? args[0] : 'Slack発注プロジェクト';\nconst requirements = (args[1] && args[1] !== '') ? args[1] : 'Slack経由での発注';\nconst budget = (args[2] && args[2] !== '') ? args[2] : '応相談';\nconst deadline = (args[3] && args[3] !== '') ? args[3] : '2週間';\n\nreturn {\n  json: {\n    project_name: projectName,\n    requirements: requirements,\n    budget: budget,\n    deadline: deadline,\n    priority: \"中\",\n    contact_info: `Slack User: ${slackData.user_name}`,\n    technical_preferences: \"なし\",\n    slack_channel: slackData.channel_id,\n    slack_user: slackData.user_name,\n    response_url: slackData.response_url,\n    // デバッグ情報\n    debug: {\n      raw_text: text,\n      parsed_args: args,\n      args_count: args.length\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "94e25cda-bda2-40e9-91fd-e995c9a56f5a",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://n8n.oppy-ai.com/webhook/ai-company-order",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        0
+      ],
+      "id": "29138c88-ecf9-4710-9192-be4b7229f97b",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"response_type\": \"in_channel\",\n  \"text\": \"🚀 プロジェクトを受注しました！\",\n  \"attachments\": [\n    {\n      \"color\": \"good\",\n      \"fields\": [\n        {\n          \"title\": \"プロジェクト名\",\n          \"value\": \"{{ $('Code').item.json.project_name }}\",\n          \"short\": true\n        },\n        {\n          \"title\": \"予算\",\n          \"value\": \"{{ $('Code').item.json.budget }}\",\n          \"short\": true\n        },\n        {\n          \"title\": \"期限\",\n          \"value\": \"{{ $('Code').item.json.deadline }}\",\n          \"short\": true\n        },\n        {\n          \"title\": \"進捗確認\",\n          \"value\": \"GitHub で進捗を確認できます\",\n          \"short\": false\n        }\n      ]\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        460,
+        0
+      ],
+      "id": "e72c157a-7928-4b5e-9759-7c311a700e29",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        []
+      ]
+    },
+    "Respond to Webhook": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "V00wqOQfw5vs8CVQ"
+  },
+  "versionId": "42c332d3-ad68-403d-b95c-8d9049056e67",
+  "meta": {
+    "instanceId": "b9ad821e1bac462e0829b0fcfa0ee54572f5b3a4dad3925c8cb3c5dae1bcef22"
+  },
+  "id": "g5Q9ix9cAyxNrhDw",
+  "tags": []
+}
