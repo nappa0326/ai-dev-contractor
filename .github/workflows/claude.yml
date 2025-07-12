@@ -28,7 +28,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 0  # Full history for better context
+          
+      - name: Cache Claude development state
+        uses: actions/cache@v3
+        with:
+          path: |
+            .claude/
+            project-state/
+          key: claude-development-${{ github.event.issue.number }}-${{ github.sha }}
+          restore-keys: |
+            claude-development-${{ github.event.issue.number }}-
 
       - name: Run Claude Code
         id: claude
@@ -48,6 +58,20 @@ jobs:
           
           # Optional: Trigger when specific user is assigned to an issue
           # assignee_trigger: "claude-bot"
+          
+          # Allow git operations for branch management
+          allowed_tools: "Bash(git:*),View,GlobTool,GrepTool,BatchTool,Edit,MultiEdit"
+          
+          # Direct prompt for continuous development
+          direct_prompt: |
+            CRITICAL: Continue working on the EXISTING branch for this issue.
+            DO NOT create a new branch.
+            
+            1. First, check current branch: git branch --show-current
+            2. If not on the correct branch, checkout the existing one
+            3. Read CLAUDE.md for project continuity guidelines
+            4. Build upon previous commits in this branch
+            5. Reference previous phase implementations
           
           # Custom instructions for phased development
           custom_instructions: |
