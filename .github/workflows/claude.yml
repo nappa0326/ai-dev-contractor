@@ -65,13 +65,17 @@ jobs:
           # Direct prompt for continuous development
           direct_prompt: |
             CRITICAL: Continue working on the EXISTING branch for this issue.
-            DO NOT create a new branch.
+            DO NOT create a new branch under any circumstances.
             
-            1. First, check current branch: git branch --show-current
-            2. If not on the correct branch, checkout the existing one
-            3. Read CLAUDE.md for project continuity guidelines
-            4. Build upon previous commits in this branch
-            5. Reference previous phase implementations
+            MANDATORY STEPS:
+            1. Run: git branch --show-current
+            2. Run: git branch -a | grep "issue-$ISSUE_NUMBER"
+            3. If not on correct branch, checkout the existing one
+            4. Run: git log --oneline -10
+            5. Read all files from previous phases before proceeding
+            6. Build upon existing implementation - DO NOT start from scratch
+            
+            If no existing branch found, report this and wait for instructions.
           
           # Custom instructions for phased development
           custom_instructions: |
