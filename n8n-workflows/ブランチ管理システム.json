@@ -1,0 +1,281 @@
+{
+  "name": "ブランチ管理システム",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "https://api.github.com/repos/ai-development-company/projects/comments/={{ $json.comment_id }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "get-comment-node",
+      "name": "Get PR Comment",
+      "credentials": {
+        "githubApi": {
+          "id": "abc123",
+          "name": "GitHub API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract issue number from comment\nconst comment = $json.body;\nconst issueMatch = comment.match(/issue-(\\d+)/i);\nconst issueNumber = issueMatch ? issueMatch[1] : null;\n\n// Extract phase information\nconst phaseMatch = comment.match(/Phase\\s+(\\d)/i);\nconst phaseNumber = phaseMatch ? parseInt(phaseMatch[1]) : null;\n\n// Check if this is a claude-review-needed comment\nconst isReviewNeeded = comment.includes('@claude-review-needed');\n\n// Extract branch name if mentioned\nconst branchMatch = comment.match(/branch:\\s*([\\w\\/-]+)/i);\nconst mentionedBranch = branchMatch ? branchMatch[1] : null;\n\nreturn {\n  issueNumber,\n  phaseNumber,\n  isReviewNeeded,\n  mentionedBranch,\n  originalComment: comment\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "parse-comment-node",
+      "name": "Parse Comment"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "condition-check",
+              "leftValue": "={{ $json.isReviewNeeded }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ],
+      "id": "check-review-node",
+      "name": "Is Review Needed?"
+    },
+    {
+      "parameters": {
+        "url": "https://api.github.com/repos/ai-development-company/projects/branches",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        -100
+      ],
+      "id": "list-branches-node",
+      "name": "List All Branches",
+      "credentials": {
+        "githubApi": {
+          "id": "abc123",
+          "name": "GitHub API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get issue number and existing branches\nconst issueNumber = $input.all()[0].json.issueNumber;\nconst branches = $input.all()[1].json;\nconst phaseNumber = $input.all()[0].json.phaseNumber;\nconst mentionedBranch = $input.all()[0].json.mentionedBranch;\n\n// Find branches for this issue\nconst issueBranches = branches.filter(branch => \n  branch.name.includes(`issue-${issueNumber}`)\n);\n\n// Check phase continuity\nlet warnings = [];\nlet errors = [];\n\nif (issueBranches.length === 0 && phaseNumber > 1) {\n  errors.push(`⚠️ Phase ${phaseNumber}が開始されましたが、issue-${issueNumber}用のブランチが見つかりません！`);\n} else if (issueBranches.length > 1) {\n  warnings.push(`📌 issue-${issueNumber}に複数のブランチが存在します: ${issueBranches.map(b => b.name).join(', ')}`);\n}\n\nif (mentionedBranch && issueBranches.length > 0) {\n  const correctBranch = issueBranches[0].name;\n  if (mentionedBranch !== correctBranch) {\n    warnings.push(`🔄 報告されたブランチ(${mentionedBranch})と実際のブランチ(${correctBranch})が異なります`);\n  }\n}\n\nreturn {\n  issueNumber,\n  phaseNumber,\n  existingBranches: issueBranches.map(b => b.name),\n  branchCount: issueBranches.length,\n  warnings,\n  errors,\n  shouldAlert: errors.length > 0 || warnings.length > 0\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        0
+      ],
+      "id": "check-continuity-node",
+      "name": "Check Branch Continuity"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "should-alert-check",
+              "leftValue": "={{ $json.shouldAlert }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        0
+      ],
+      "id": "should-alert-node",
+      "name": "Should Alert?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "slackApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"channel\": \"C094LNGF8H5\",\n  \"text\": \"🚨 ブランチ管理アラート\",\n  \"blocks\": [\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": `*Issue #${$json.issueNumber} - Phase ${$json.phaseNumber}*\\n\\n${$json.errors.concat($json.warnings).join('\\n')}`\n      }\n    },\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": `*既存ブランチ:* ${$json.existingBranches.length > 0 ? $json.existingBranches.join(', ') : 'なし'}`\n      }\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        -100
+      ],
+      "id": "slack-alert-node",
+      "name": "Send Slack Alert",
+      "credentials": {
+        "slackApi": {
+          "id": "aHC6dGXUUgCWfDpJ",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.github.com/repos/ai-development-company/projects/issues/{{ $json.issueNumber }}/comments",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"body\": `## ⚠️ ブランチ管理チェック\\n\\n${$json.errors.concat($json.warnings).join('\\n')}\\n\\n### 対応方法\\n\\n${$json.errors.length > 0 ? '1. 既存のブランチを確認し、そのブランチで作業を継続してください\\n2. `git checkout ' + ($json.existingBranches[0] || 'claude/issue-' + $json.issueNumber + '-YYYYMMDD_HHMMSS') + '`\\n3. 前のフェーズの実装を必ず確認してください' : $json.warnings.join('\\n')}`\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        100
+      ],
+      "id": "github-comment-node",
+      "name": "Add GitHub Comment",
+      "credentials": {
+        "githubApi": {
+          "id": "abc123",
+          "name": "GitHub API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Get PR Comment": {
+      "main": [
+        [
+          {
+            "node": "Parse Comment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Comment": {
+      "main": [
+        [
+          {
+            "node": "Is Review Needed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Review Needed?": {
+      "main": [
+        [
+          {
+            "node": "List All Branches",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "List All Branches": {
+      "main": [
+        [
+          {
+            "node": "Check Branch Continuity",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Parse Comment": {
+      "main": [
+        [
+          {
+            "node": "Check Branch Continuity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Branch Continuity": {
+      "main": [
+        [
+          {
+            "node": "Should Alert?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Should Alert?": {
+      "main": [
+        [
+          {
+            "node": "Send Slack Alert",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Add GitHub Comment",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
