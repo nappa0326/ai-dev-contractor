@@ -111,12 +111,17 @@ jobs:
                - If existing branch found → Use it (NEVER create a new one)
                - If no existing branch → This is Phase 1, create: git checkout -b claude/issue-${{ github.event.issue.number }}-$(date +%Y%m%d_%H%M%S)
             
-            4. For continuing work (Phase 2+):
+            4. For Phase 1 ONLY - MANDATORY PROJECT DIRECTORY:
+               - Create project-specific directory with kebab-case naming
+               - Examples: "PDF圧縮アプリ" → pdf-compressor/, "OCRサービス" → ocr-service/
+               - MUST create directory and initial README.md in Phase 1
+            
+            5. For continuing work (Phase 2+):
                - Run: git log --oneline -10
                - Read ALL files from previous phases
                - Build upon existing implementation
             
-            5. Always report your branch name in responses
+            6. Always report your branch name in responses
           
           # Custom instructions for phased development
           custom_instructions: |

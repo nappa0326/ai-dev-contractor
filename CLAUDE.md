@@ -38,6 +38,28 @@ ls -la  # ファイル構造を確認
 git checkout -b claude/issue-{issue_number}-{timestamp}
 ```
 
+## プロジェクトディレクトリの作成ルール
+
+### 絶対的ルール
+**Phase 1で必ずプロジェクト専用ディレクトリを作成すること**
+
+### ディレクトリ命名規則
+- プロジェクト名を英語のkebab-caseに変換
+- 日本語プロジェクト名は適切な英語名に翻訳
+- 例：
+  - "PDF圧縮デスクトップアプリ" → `pdf-compressor/`
+  - "画像OCR・ドキュメント変換Webサービス" → `ocr-document-service/`
+  - "Markdown変換デスクトップアプリ" → `markdown-converter/`
+
+### ディレクトリ作成手順
+```bash
+# Phase 1開始時に必ず実行
+mkdir {project-name}
+cd {project-name}
+# README.mdを作成して初期コミット
+echo "# {プロジェクト名}" > README.md
+```
+
 ## 開発プロセス
 
 ### フェーズ型開発の厳守
@@ -45,6 +67,7 @@ git checkout -b claude/issue-{issue_number}-{timestamp}
 新規プロジェクト開始時は、**必ず**以下のフェーズに従って開発を進めてください：
 
 1. **Phase 1 (20%)**: 設計書・アーキテクチャドキュメントを作成
+   - **プロジェクト専用ディレクトリを作成**
    - 技術選定の理由を明記
    - ディレクトリ構造の提案
    - ブランチ名: `claude/issue-{番号}-{タイムスタンプ}`を作成
