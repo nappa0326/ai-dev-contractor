@@ -46,12 +46,12 @@
           "mode": "name"
         },
         "issueNumber": "={{ $json.pr_number }}",
-        "body": "={{ $json.action_type === 'continue' ? '@claude continue\\n\\n（' + $json.user + 'さんがSlackでボタンをクリックしました）' : '@claude revise: Slackからの修正依頼があります\\n\\n（' + $json.user + 'さんがSlackでボタンをクリックしました）' }}"
+        "body": "={{ $json.extractedBranch ? '@claude continue\\n\\n---\\n[自動生成されたブランチ指示]\\n作業ブランチ: ' + $json.extractedBranch + '\\n前回のフェーズ: Phase ' + $json.latestPhase + '\\n---\\n\\n（' + $json.user + 'さんがSlackでボタンをクリックしました）' : '@claude continue\\n\\n（' + $json.user + 'さんがSlackでボタンをクリックしました）' }}"
       },
       "type": "n8n-nodes-base.github",
       "typeVersion": 1.1,
       "position": [
-        680,
+        1120,
         200
       ],
       "id": "19e85525-8f63-4767-b538-3c9826f262cc",
@@ -87,7 +87,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        900,
+        1340,
         200
       ],
       "id": "f4a81f6d-20c9-499f-8e41-d33af9e2a680",
@@ -173,7 +173,9 @@
                   }
                 ],
                 "combinator": "and"
-              }
+              },
+              "renameOutput": true,
+              "outputKey": "button_click"
             }
           ]
         },
@@ -306,6 +308,41 @@
           "name": "Slack account"
         }
       }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.github.com/repos/nappa0326/ai-development-company/issues/{{ $json.pr_number }}/comments",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        200
+      ],
+      "id": "207f92bc-61bb-497f-8116-607e085ad499",
+      "name": "HTTP Request - Get Issue Comments",
+      "credentials": {
+        "githubApi": {
+          "id": "pY9qy7slGFPBmR5S",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "  // 最新のコメントからブランチ情報を抽出\n  const comments = $input.all();\n  let branchName = null;\n  let latestPhase = null;\n\n  // コメントを逆順（最新から）検索\n  for (let i = comments.length - 1; i >= 0; i--) {\n    const comment = comments[i].json.body || '';\n\n    // ブランチ名を探す（エスケープを修正）\n    const branchMatch = comment.match(/branch:\\s*([\\w\\/\\-\\.]+)/i);\n    if (branchMatch && !branchName) {\n      branchName = branchMatch[1];\n    }\n\n    // Phase番号を探す\n    const phaseMatch = comment.match(/Phase\\s+(\\d)/i);\n    if (phaseMatch && !latestPhase) {\n      latestPhase = phaseMatch[1];\n    }\n\n    // 両方見つかったら終了\n    if (branchName && latestPhase) break;\n  }\n\n  // Codeノードからのデータを取得（正しい構文）\n  const originalData = $(\"Code\").first().json;\n\n  return {\n    ...originalData,\n    extractedBranch: branchName,\n    latestPhase: latestPhase,\n    nextPhase: latestPhase ? parseInt(latestPhase) + 1 : 1\n  };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        200
+      ],
+      "id": "7811e35b-7244-43a7-851f-3210be4dadd5",
+      "name": "Code - Extract Branch Info"
     }
   ],
   "pinData": {},
@@ -361,7 +398,7 @@
         ],
         [
           {
-            "node": "Create a comment on an issue",
+            "node": "HTTP Request - Get Issue Comments",
             "type": "main",
             "index": 0
           }
@@ -389,6 +426,28 @@
           }
         ]
       ]
+    },
+    "HTTP Request - Get Issue Comments": {
+      "main": [
+        [
+          {
+            "node": "Code - Extract Branch Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Extract Branch Info": {
+      "main": [
+        [
+          {
+            "node": "Create a comment on an issue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
@@ -397,7 +456,7 @@
     "callerPolicy": "workflowsFromSameOwner",
     "errorWorkflow": "V00wqOQfw5vs8CVQ"
   },
-  "versionId": "91145e2d-45d3-4e9b-83dc-295f501085d4",
+  "versionId": "5842188a-f664-4ef4-89b0-b2ac524768e5",
   "meta": {
     "instanceId": "b9ad821e1bac462e0829b0fcfa0ee54572f5b3a4dad3925c8cb3c5dae1bcef22"
   },

@@ -185,34 +185,6 @@
           "name": "Slack account"
         }
       }
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://n8n.oppy-ai.com/webhook/branch-check",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "=  {\n    \"pr_url\": \"{{ $json.pr_url }}\",\n    \"comment_id\": \"{{ $json.comment_id }}\",\n    \"issue_number\": \"{{ $json.pr_number }}\",\n    \"phase\": \"{{ $json.phase }}\"\n  }",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        920,
-        -280
-      ],
-      "id": "48e7a55c-8ed0-4e64-8786-f987d1f2dc0f",
-      "name": "HTTP Request",
-      "onError": "continueRegularOutput"
     }
   ],
   "pinData": {},
@@ -257,11 +229,6 @@
             "node": "Send a message - Review",
             "type": "main",
             "index": 0
-          },
-          {
-            "node": "HTTP Request",
-            "type": "main",
-            "index": 0
           }
         ],
         [
@@ -280,7 +247,7 @@
     "callerPolicy": "workflowsFromSameOwner",
     "errorWorkflow": "V00wqOQfw5vs8CVQ"
   },
-  "versionId": "5261b467-a0c1-4e0a-8d54-a201cd2df173",
+  "versionId": "a9b06e31-cbc8-47a4-b7cc-07b86a7c0788",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "b9ad821e1bac462e0829b0fcfa0ee54572f5b3a4dad3925c8cb3c5dae1bcef22"

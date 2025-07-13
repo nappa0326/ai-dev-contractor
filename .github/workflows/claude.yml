@@ -29,6 +29,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Full history for better context
+          # Always fetch all branches to find existing ones
+          fetch-tags: true
           
       - name: Cache Claude development state
         uses: actions/cache@v3
@@ -40,11 +42,34 @@ jobs:
           restore-keys: |
             claude-development-${{ github.event.issue.number }}-
 
+      - name: Setup branch tracking
+        run: |
+          # Fetch all remote branches
+          git fetch --all --prune
+          
+          # Check for existing branch related to this issue
+          ISSUE_NUMBER="${{ github.event.issue.number }}"
+          EXISTING_BRANCH=$(git branch -a | grep -E "remotes/origin/.*issue-${ISSUE_NUMBER}" | head -1 | sed 's/remotes\/origin\///')
+          
+          if [ -n "$EXISTING_BRANCH" ]; then
+            echo "Found existing branch: $EXISTING_BRANCH"
+            git checkout -b "$EXISTING_BRANCH" "origin/$EXISTING_BRANCH" || git checkout "$EXISTING_BRANCH"
+            echo "CLAUDE_EXISTING_BRANCH=$EXISTING_BRANCH" >> $GITHUB_ENV
+            echo "CLAUDE_BASE_BRANCH=$EXISTING_BRANCH" >> $GITHUB_ENV
+          else
+            echo "No existing branch found for issue $ISSUE_NUMBER"
+            echo "CLAUDE_EXISTING_BRANCH=" >> $GITHUB_ENV
+            echo "CLAUDE_BASE_BRANCH=${{ github.event.repository.default_branch }}" >> $GITHUB_ENV
+          fi
+
       - name: Run Claude Code
         id: claude
         uses: anthropics/claude-code-action@beta
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          
+          # Specify base branch for continuity (commented out - may not be implemented yet)
+          # base_branch: ${{ env.CLAUDE_BASE_BRANCH }}
 
           # This is an optional setting that allows Claude to read CI results on PRs
           additional_permissions: |
@@ -60,22 +85,38 @@ jobs:
           # assignee_trigger: "claude-bot"
           
           # Allow git operations for branch management
-          allowed_tools: "Bash(git:*),View,GlobTool,GrepTool,BatchTool,Edit,MultiEdit"
+          allowed_tools: >-
+            Bash(git:*)
+            View
+            GlobTool
+            GrepTool
+            BatchTool
+            Edit
+            MultiEdit
+            Read
+            Write
           
           # Direct prompt for continuous development
           direct_prompt: |
-            CRITICAL: Continue working on the EXISTING branch for this issue.
-            DO NOT create a new branch under any circumstances.
+            CRITICAL: Branch management for Issue #${{ github.event.issue.number }}
             
-            MANDATORY STEPS:
-            1. Run: git branch --show-current
-            2. Run: git branch -a | grep "issue-$ISSUE_NUMBER"
-            3. If not on correct branch, checkout the existing one
-            4. Run: git log --oneline -10
-            5. Read all files from previous phases before proceeding
-            6. Build upon existing implementation - DO NOT start from scratch
+            Current situation:
+            ${{ env.CLAUDE_EXISTING_BRANCH && format('- Existing branch found: {0}', env.CLAUDE_EXISTING_BRANCH) || '- No existing branch found (this appears to be Phase 1)' }}
             
-            If no existing branch found, report this and wait for instructions.
+            MANDATORY WORKFLOW:
+            1. First, check current branch: git branch --show-current
+            2. Search for existing branches: git branch -a | grep "issue-${{ github.event.issue.number }}"
+            
+            3. Decision logic:
+               - If existing branch found → Use it (NEVER create a new one)
+               - If no existing branch → This is Phase 1, create: git checkout -b claude/issue-${{ github.event.issue.number }}-$(date +%Y%m%d_%H%M%S)
+            
+            4. For continuing work (Phase 2+):
+               - Run: git log --oneline -10
+               - Read ALL files from previous phases
+               - Build upon existing implementation
+            
+            5. Always report your branch name in responses
           
           # Custom instructions for phased development
           custom_instructions: |
@@ -91,9 +132,11 @@ jobs:
                ```bash
                # 現在のIssueに関連するブランチを検索
                git branch -a | grep "issue-{issue_number}"
-               # 既存ブランチがあれば、それを使用
-               git checkout existing-branch-name
-               # なければ新規作成
+               
+               # 既存ブランチがある場合 → 必ずそれを使用
+               git checkout {existing-branch-name}
+               
+               # 既存ブランチがない場合 → Phase 1なので新規作成
                git checkout -b claude/issue-{issue_number}-{timestamp}
                ```
             
