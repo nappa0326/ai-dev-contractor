@@ -49,7 +49,7 @@ jobs:
           
           # Check for existing branch related to this issue
           ISSUE_NUMBER="${{ github.event.issue.number }}"
-          EXISTING_BRANCH=$(git branch -a | grep -E "remotes/origin/.*issue-${ISSUE_NUMBER}" | head -1 | sed 's/remotes\/origin\///')
+          EXISTING_BRANCH=$(git branch -a | grep -E "remotes/origin/.*issue-${ISSUE_NUMBER}" | head -1 | sed 's/remotes\/origin\///' | xargs)
           
           if [ -n "$EXISTING_BRANCH" ]; then
             echo "Found existing branch: $EXISTING_BRANCH"
