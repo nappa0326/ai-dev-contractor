@@ -84,9 +84,9 @@ jobs:
           # Optional: Trigger when specific user is assigned to an issue
           # assignee_trigger: "claude-bot"
           
-          # Allow git operations for branch management
+          # Allow git operations for branch management and quality checks
           allowed_tools: >-
-            Bash(git:*)
+            Bash(git:*;npm:*;yarn:*;pnpm:*;npx:*;node:*;python:*;pip:*;pytest:*;ruff:*;black:*;eslint:*;prettier:*)
             View
             GlobTool
             GrepTool
@@ -125,7 +125,12 @@ jobs:
             
             6. Always report your branch name in responses
             
-            7. CRITICAL - Commit and push at the end of EVERY phase:
+            7. Quality checks before commit (if applicable):
+               - Run linting: npm run lint, yarn lint, ruff check, etc.
+               - Run tests: npm test, pytest, etc.
+               - Fix any issues before proceeding
+            
+            8. CRITICAL - Commit and push at the end of EVERY phase:
                - git add -A
                - git commit -m "feat: Phase X implementation for Issue #${{ github.event.issue.number }}"
                - git push origin {your-branch-name}
