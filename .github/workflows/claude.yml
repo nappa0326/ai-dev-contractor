@@ -19,9 +19,9 @@ jobs:
       (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-      pull-requests: read
-      issues: read
+      contents: write  # Changed from read to write for git push
+      pull-requests: write  # Changed to allow PR creation
+      issues: write  # Changed to allow issue updates
       id-token: write
       actions: read # Required for Claude to read CI results on PRs
     steps:
@@ -31,6 +31,8 @@ jobs:
           fetch-depth: 0  # Full history for better context
           # Always fetch all branches to find existing ones
           fetch-tags: true
+          # Use the default GITHUB_TOKEN for write access
+          token: ${{ secrets.GITHUB_TOKEN }}
           
       - name: Cache Claude development state
         uses: actions/cache@v3
@@ -42,6 +44,11 @@ jobs:
           restore-keys: |
             claude-development-${{ github.event.issue.number }}-
 
+      - name: Configure git
+        run: |
+          git config --global user.name "claude[bot]"
+          git config --global user.email "claude[bot]@users.noreply.github.com"
+          
       - name: Setup branch tracking
         run: |
           # Fetch all remote branches

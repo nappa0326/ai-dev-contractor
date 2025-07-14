@@ -333,7 +333,7 @@
     },
     {
       "parameters": {
-        "jsCode": "    // 最新のコメントからブランチ情報を抽出\n    const comments = $input.all();\n    let branchName = null;\n    let latestPhase = null;\n\n    // コメントを逆順（最新から）検索\n    for (let i = comments.length - 1; i >= 0; i--) {\n      const comment = comments[i].json.body || '';\n\n      // ブランチ名を探す（Branch: または • Branch: の形式に対応）\n      const branchMatch = comment.match(/(?:^|\\s|•\\s*)Branch:\\s*`?([\\/\\w-]+)`?/i);\n      if (branchMatch && !branchName) {\n        branchName = branchMatch[1];\n      }\n\n      // Phase番号を探す\n      const phaseMatch = comment.match(/Phase\\s+(\\d)/i);\n      if (phaseMatch && !latestPhase) {\n        latestPhase = phaseMatch[1];\n      }\n\n      // 両方見つかったら終了\n      if (branchName && latestPhase) break;\n    }\n\n    // Codeノードからのデータを取得（正しい構文）\n    const originalData = $(\"Code\").first().json;\n\n    return {\n      ...originalData,\n      extractedBranch: branchName,\n      latestPhase: latestPhase,\n      nextPhase: latestPhase ? parseInt(latestPhase) + 1 : 1\n    };"
+        "jsCode": "    // 最新のコメントからブランチ情報を抽出\n    const comments = $input.all();\n    let branchName = null;\n    let latestPhase = null;\n\n    // コメントを逆順（最新から）検索\n    for (let i = comments.length - 1; i >= 0; i--) {\n      const comment = comments[i].json.body || '';\n\n      // ブランチ名を探す（Branch: または **Branch**: または • Branch: の形式に対応）\n      const branchMatch = comment.match(/(?:^|\\s|•\\s*)(?:\\*\\*)?Branch(?:\\*\\*)?:\\s*`?([\\/\\w-]+)`?/i);\n      if (branchMatch && !branchName) {\n        branchName = branchMatch[1];\n      }\n\n      // Phase番号を探す\n      const phaseMatch = comment.match(/Phase\\s+(\\d)/i);\n      if (phaseMatch && !latestPhase) {\n        latestPhase = phaseMatch[1];\n      }\n\n      // 両方見つかったら終了\n      if (branchName && latestPhase) break;\n    }\n\n    // Codeノードからのデータを取得（正しい構文）\n    const originalData = $(\"Code\").first().json;\n\n    return {\n      ...originalData,\n      extractedBranch: branchName,\n      latestPhase: latestPhase,\n      nextPhase: latestPhase ? parseInt(latestPhase) + 1 : 1\n    };"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -456,7 +456,7 @@
     "callerPolicy": "workflowsFromSameOwner",
     "errorWorkflow": "V00wqOQfw5vs8CVQ"
   },
-  "versionId": "755a928d-1ae2-46d6-9724-2823acf06640",
+  "versionId": "74cebec0-16ee-46eb-b8b5-a6ad19bafb03",
   "meta": {
     "instanceId": "b9ad821e1bac462e0829b0fcfa0ee54572f5b3a4dad3925c8cb3c5dae1bcef22"
   },
