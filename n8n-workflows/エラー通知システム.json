@@ -20,7 +20,7 @@
         "nodeCredentialType": "slackApi",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "=  {\n    \"channel\": \"C094LNGF8H5\",\n    \"text\": \"⚠️ ワークフローエラーが発生しました\",\n    \"blocks\": [\n      {\n        \"type\": \"section\",\n        \"text\": {\n          \"type\": \"mrkdwn\",\n          \"text\": `*ワークフロー名:* ${$json.workflow?.name || '不明'}\n  *エラーメッセージ:* ${$json.execution?.error?.message || $json.error?.message || '詳細不明'}\n  *実行ID:* ${$json.execution?.id || '不明'}`\n        }\n      }\n    ]\n  }",
+        "jsonBody": "=  {\n    \"channel\": \"C094LNGF8H5\",\n    \"text\": \"⚠️ ワークフローエラーが発生しました\",\n    \"blocks\": [\n      {\n        \"type\": \"section\",\n        \"text\": {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*ワークフロー名:* {{ $json.workflow?.name || '不明' }}\\n*エラーメッセージ:* {{ $json.execution?.error?.message || $json.error?.message || '詳細不明' }}\\n*実行ID:* {{ $json.execution?.id || '不明' }}\"\n        }\n      }\n    ]\n  }",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -57,7 +57,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "8019c623-c7cf-4663-8ac7-276e35c92026",
+  "versionId": "05746b2a-615b-49ea-9b59-b7f639126ea2",
   "meta": {
     "instanceId": "b9ad821e1bac462e0829b0fcfa0ee54572f5b3a4dad3925c8cb3c5dae1bcef22"
   },
