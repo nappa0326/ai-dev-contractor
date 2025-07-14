@@ -105,7 +105,15 @@ jobs:
           
           # Direct prompt for continuous development
           direct_prompt: |
-            CRITICAL: Branch management for Issue #${{ github.event.issue.number }}
+            CRITICAL RULES - MUST FOLLOW REGARDLESS OF PROJECT COMPLEXITY:
+            
+            1. PHASED DEVELOPMENT IS MANDATORY
+               - ALWAYS implement in 4 separate phases
+               - NEVER complete multiple phases in one execution
+               - Each phase MUST end with @claude-review-needed tag
+               - Wait for user approval before proceeding to next phase
+            
+            2. Branch management for Issue #${{ github.event.issue.number }}
             
             Current situation:
             ${{ env.CLAUDE_EXISTING_BRANCH && format('- Existing branch found: {0}', env.CLAUDE_EXISTING_BRANCH) || '- No existing branch found (this appears to be Phase 1)' }}
@@ -124,6 +132,8 @@ jobs:
                - Create project-specific directory with kebab-case naming
                - Examples: "PDF圧縮アプリ" → pdf-compressor/, "OCRサービス" → ocr-service/
                - MUST create directory and initial README.md in Phase 1
+               - Create ONLY design documents in Phase 1
+               - DO NOT implement any code in Phase 1
             
             5. For continuing work (Phase 2+):
                - Run: git log --oneline -10
@@ -142,6 +152,8 @@ jobs:
                - git commit -m "feat: Phase X implementation for Issue #${{ github.event.issue.number }}"
                - git push origin {your-branch-name}
                - NEVER complete a phase without pushing to remote
+               - After push, add comment with @claude-review-needed
+               - STOP execution and wait for user response
           
           # Custom instructions for phased development
           custom_instructions: |
