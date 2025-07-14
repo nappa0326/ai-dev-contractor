@@ -93,7 +93,7 @@ jobs:
           
           # Allow git operations for branch management and quality checks
           allowed_tools: >-
-            Bash(git:*;npm:*;yarn:*;pnpm:*;npx:*;node:*;python:*;pip:*;pytest:*;ruff:*;black:*;eslint:*;prettier:*)
+            Bash
             View
             GlobTool
             GrepTool
