@@ -109,6 +109,8 @@ jobs:
             
             3. Decision logic:
                - If existing branch found → Use it (NEVER create a new one)
+                 - git checkout {existing-branch}
+                 - git pull origin {existing-branch}
                - If no existing branch → This is Phase 1, create: git checkout -b claude/issue-${{ github.event.issue.number }}-$(date +%Y%m%d_%H%M%S)
             
             4. For Phase 1 ONLY - MANDATORY PROJECT DIRECTORY:
@@ -146,6 +148,7 @@ jobs:
                
                # 既存ブランチがある場合 → 必ずそれを使用
                git checkout {existing-branch-name}
+               git pull origin {existing-branch-name}
                
                # 既存ブランチがない場合 → Phase 1なので新規作成
                git checkout -b claude/issue-{issue_number}-{timestamp}
@@ -156,6 +159,7 @@ jobs:
                - Phase 2 (50%): **同一ブランチで**MVPを実装
                - Phase 3 (80%): **同一ブランチで**完全実装
                - Phase 4 (100%): **同一ブランチで**完成してPRを作成
+                 - 必須: コメントに【PHASE4_COMPLETE】マーカーを含める
             
             ## 📌 Phase 4完了時の必須マーカー
             Phase 4の開発が完了した際は、コメントに必ず以下のマーカーを含めること：
@@ -170,7 +174,7 @@ jobs:
             git add -A
             
             # 2. フェーズ完了をコミット
-            git commit -m "feat: Phase {フェーズ番号} implementation for Issue #{issue番号}"
+            git commit -m "feat: Phase X implementation for Issue #${{ github.event.issue.number }}"
             
             # 3. リモートにプッシュ（これを忘れると次回新しいブランチが作成される！）
             git push origin {現在のブランチ名}
@@ -188,7 +192,7 @@ jobs:
             5. **レビューポイント**:
                - 各フェーズ完了時に`@claude-review-needed`タグを追加
                - 必ず現在のブランチ名を報告に含める
-               - 例: "Phase 2完了 (branch: claude/issue-24-20250712_012315)"
+               - 例: "Phase 2完了 (branch: claude/issue-24-20250712_012315) @claude-review-needed"
             
             6. **禁止事項**:
                - 新しいフェーズで新しいブランチを作成すること
