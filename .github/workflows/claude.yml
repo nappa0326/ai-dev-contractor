@@ -122,6 +122,12 @@ jobs:
                - Build upon existing implementation
             
             6. Always report your branch name in responses
+            
+            7. CRITICAL - Commit and push at the end of EVERY phase:
+               - git add -A
+               - git commit -m "feat: Phase X implementation for Issue #${{ github.event.issue.number }}"
+               - git push origin {your-branch-name}
+               - NEVER complete a phase without pushing to remote
           
           # Custom instructions for phased development
           custom_instructions: |
@@ -155,6 +161,23 @@ jobs:
             Phase 4の開発が完了した際は、コメントに必ず以下のマーカーを含めること：
             【PHASE4_COMPLETE】
             このマーカーは完了通知システムで使用されるため、必須です。
+            
+            ## 🚨 各フェーズ完了時の必須作業
+            **絶対的ルール：各フェーズの作業を完了する前に必ず以下を実行**
+            
+            ```bash
+            # 1. すべての変更をステージング
+            git add -A
+            
+            # 2. フェーズ完了をコミット
+            git commit -m "feat: Phase {フェーズ番号} implementation for Issue #{issue番号}"
+            
+            # 3. リモートにプッシュ（これを忘れると次回新しいブランチが作成される！）
+            git push origin {現在のブランチ名}
+            ```
+            
+            **警告**: プッシュを忘れると、次回の実行時に既存ブランチが見つからず、
+            新しいブランチが作成されてしまい、フェーズ間の連続性が失われます。
             
             4. **各フェーズでの作業**:
                - 前のフェーズのコードを必ず読み込む
