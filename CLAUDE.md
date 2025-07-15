@@ -38,6 +38,83 @@ ls -la  # ファイル構造を確認
 git checkout -b claude/issue-{issue_number}-{timestamp}
 ```
 
+## プロジェクトブランチ戦略（新規案件から適用）
+
+### ブランチ構造
+- `master`: システム設定・ワークフローのみ（プロジェクトコードは含まない）
+- `project/{project-name}`: 案件専用メインブランチ（永続的）
+- `project/{project-name}/claude/issue-{number}-{description}`: 作業ブランチ
+
+### 新規プロジェクト開発フロー
+
+#### Phase 1開始時の手順
+```bash
+# 1. プロジェクトメインブランチを作成
+git checkout master
+git checkout -b project/{project-name}
+
+# 2. プロジェクトディレクトリを作成
+mkdir {project-name}
+cd {project-name}
+echo "# {プロジェクト名}" > README.md
+
+# 3. プロジェクトメタデータを作成
+cat > .project.yml << EOF
+project_id: {project-name}
+project_name: {日本語プロジェクト名}
+initial_issue: {issue-number}
+created_at: $(date -I)
+status: active
+maintainer: "@{github-username}"
+EOF
+
+# 4. 初期コミットとプッシュ
+git add .
+git commit -m "chore: Initialize project/{project-name} branch"
+git push -u origin project/{project-name}
+
+# 5. 作業ブランチを作成
+git checkout -b project/{project-name}/claude/issue-{number}-initial
+```
+
+#### 開発完了時（Phase 4後）
+```bash
+# プロジェクトメインブランチへPR作成
+gh pr create --base project/{project-name} \
+             --title "feat: Issue #{number} - {description}" \
+             --body "## 実装内容\n{summary}\n\nCloses #{number}"
+```
+
+### 継続開発フロー
+
+#### 機能追加・バグ修正の開始
+```bash
+# 1. プロジェクトメインブランチを最新化
+git checkout project/{project-name}
+git pull origin project/{project-name}
+
+# 2. 新しい作業ブランチを作成
+git checkout -b project/{project-name}/claude/issue-{number}-{feature/bugfix}
+
+# 3. 既存コードを理解
+cat .project.yml  # プロジェクト情報確認
+git log --oneline -10  # 開発履歴確認
+```
+
+### Issue記法の拡張
+
+```markdown
+# 新規プロジェクト
+@claude PDF圧縮デスクトップアプリを作成してください
+
+# 継続開発（プロジェクト名指定）
+@claude [project: pdf-compressor] ドラッグ&ドロップ機能を追加
+
+# 継続開発（関連Issue指定）
+@claude [extends: #44] WebSocket対応を追加
+@claude [bugfix: #44] メモリリーク修正
+```
+
 ## プロジェクトディレクトリの作成ルール
 
 ### 絶対的ルール
@@ -70,7 +147,9 @@ echo "# {プロジェクト名}" > README.md
    - **プロジェクト専用ディレクトリを作成**
    - 技術選定の理由を明記
    - ディレクトリ構造の提案
-   - ブランチ名: `claude/issue-{番号}-{タイムスタンプ}`を作成
+   - ブランチ名: 
+     - 既存案件への対応: `claude/issue-{番号}-{タイムスタンプ}`を作成
+     - 新規案件: `project/{project-name}/claude/issue-{番号}-initial`を作成
    - **報告に必ずブランチ名を含める**
    - `@claude-review-needed`タグを必ず含める
 
@@ -150,8 +229,15 @@ git push origin {現在のブランチ名}
 1. すべての変更をコミット・プッシュ
 2. プルリクエストを作成：
    ```bash
-   gh pr create --title "feat: Issue #XX - [プロジェクト名]" \
+   # 既存案件への対応（masterへのPR）
+   gh pr create --base master \
+                --title "feat: Issue #XX - [プロジェクト名]" \
                 --body "## 概要\n[実装内容の要約]\n\n## 実装フェーズ\n- Phase 1: 設計完了\n- Phase 2: MVP実装完了\n- Phase 3: 完全実装完了\n- Phase 4: 品質向上完了\n\nCloses #XX"
+   
+   # 新規案件（プロジェクトブランチへのPR）
+   gh pr create --base project/{project-name} \
+                --title "feat: Issue #XX - [機能説明]" \
+                --body "## 実装内容\n[実装内容の要約]\n\nCloses #XX"
    ```
 
 ### コミュニケーション
