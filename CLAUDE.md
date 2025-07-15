@@ -13,9 +13,9 @@
 #### Issue別ブランチマッピング
 <!-- 
 例：
-- Issue #24: claude/issue-24-20250712_012315
-- Issue #25: claude/issue-25-20250712_042044
-- Issue #26: claude/issue-26-20250712_103859
+- Issue #46: project/meishi-generator/claude/issue-46-initial
+- Issue #47: project/pdf-compressor/claude/issue-47-initial
+- Issue #48: project/pdf-compressor/claude/issue-48-drag-drop
 -->
 
 ### ブランチ管理手順（毎回必ず実行）
@@ -23,27 +23,28 @@
 ```bash
 # 1. 作業開始時、必ず既存ブランチを確認
 git fetch --all
-git branch -a | grep "issue-{現在のissue番号}"
+git branch -a | grep -E "project/.*/claude/issue-{現在のissue番号}"
 
-# 2. 既存ブランチが存在する場合
-git checkout {既存ブランチ名}
-git pull origin {既存ブランチ名}
+# 2. Phase 1の場合（新規プロジェクト）
+# → プロジェクトブランチ戦略のセクションを参照
 
-# 3. 前のフェーズの実装を確認
+# 3. Phase 2以降の場合（継続開発）
+git checkout {既存作業ブランチ名}
+git pull origin {既存作業ブランチ名}
+
+# 4. 前のフェーズの実装を確認
 git log --oneline -10  # コミット履歴を確認
 ls -la  # ファイル構造を確認
 # 主要ファイルの内容を読み込んで理解する
-
-# 4. 新規ブランチは初回のみ作成
-git checkout -b claude/issue-{issue_number}-{timestamp}
 ```
 
-## プロジェクトブランチ戦略（新規案件から適用）
+## プロジェクトブランチ戦略
 
 ### ブランチ構造
 - `master`: システム設定・ワークフローのみ（プロジェクトコードは含まない）
 - `project/{project-name}`: 案件専用メインブランチ（永続的）
-- `project/{project-name}/claude/issue-{number}-{description}`: 作業ブランチ
+- `project/{project-name}/claude/issue-{number}-initial`: 初期開発の作業ブランチ
+- `project/{project-name}/claude/issue-{number}-{feature}`: 継続開発の作業ブランチ
 
 ### 新規プロジェクト開発フロー
 
@@ -81,8 +82,8 @@ git checkout -b project/{project-name}/claude/issue-{number}-initial
 ```bash
 # プロジェクトメインブランチへPR作成
 gh pr create --base project/{project-name} \
-             --title "feat: Issue #{number} - {description}" \
-             --body "## 実装内容\n{summary}\n\nCloses #{number}"
+             --title "feat: Issue #{number} - [機能説明]" \
+             --body "## 実装内容\n[実装内容の要約]\n\nCloses #{number}"
 ```
 
 ### 継続開発フロー
@@ -147,9 +148,7 @@ echo "# {プロジェクト名}" > README.md
    - **プロジェクト専用ディレクトリを作成**
    - 技術選定の理由を明記
    - ディレクトリ構造の提案
-   - ブランチ名: 
-     - 既存案件への対応: `claude/issue-{番号}-{タイムスタンプ}`を作成
-     - 新規案件: `project/{project-name}/claude/issue-{番号}-initial`を作成
+   - ブランチ名: `project/{project-name}/claude/issue-{番号}-initial`を作成
    - **報告に必ずブランチ名を含める**
    - `@claude-review-needed`タグを必ず含める
 
@@ -158,7 +157,7 @@ echo "# {プロジェクト名}" > README.md
    - Phase 1の設計に基づいて実装
    - 既存ファイルがあれば読み込んで理解
    - コア機能のみ実装
-   - **報告例**: "Phase 2完了 (branch: claude/issue-24-20250712_012315)"
+   - **報告例**: "Phase 2完了 (branch: project/pdf-compressor/claude/issue-24-initial)"
    - `@claude-review-needed`タグを必ず含める
 
 3. **Phase 3 (80%)**: 完全実装
@@ -229,12 +228,7 @@ git push origin {現在のブランチ名}
 1. すべての変更をコミット・プッシュ
 2. プルリクエストを作成：
    ```bash
-   # 既存案件への対応（masterへのPR）
-   gh pr create --base master \
-                --title "feat: Issue #XX - [プロジェクト名]" \
-                --body "## 概要\n[実装内容の要約]\n\n## 実装フェーズ\n- Phase 1: 設計完了\n- Phase 2: MVP実装完了\n- Phase 3: 完全実装完了\n- Phase 4: 品質向上完了\n\nCloses #XX"
-   
-   # 新規案件（プロジェクトブランチへのPR）
+   # プロジェクトブランチへのPR作成
    gh pr create --base project/{project-name} \
                 --title "feat: Issue #XX - [機能説明]" \
                 --body "## 実装内容\n[実装内容の要約]\n\nCloses #XX"

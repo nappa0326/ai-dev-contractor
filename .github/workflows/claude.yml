@@ -56,13 +56,15 @@ jobs:
           
           # Check for existing branch related to this issue
           ISSUE_NUMBER="${{ github.event.issue.number }}"
-          EXISTING_BRANCH=$(git branch -a | grep -E "remotes/origin/.*issue-${ISSUE_NUMBER}" | head -1 | sed 's/remotes\/origin\///' | xargs)
           
-          if [ -n "$EXISTING_BRANCH" ]; then
-            echo "Found existing branch: $EXISTING_BRANCH"
-            git checkout -b "$EXISTING_BRANCH" "origin/$EXISTING_BRANCH" || git checkout "$EXISTING_BRANCH"
-            echo "CLAUDE_EXISTING_BRANCH=$EXISTING_BRANCH" >> $GITHUB_ENV
-            echo "CLAUDE_BASE_BRANCH=$EXISTING_BRANCH" >> $GITHUB_ENV
+          # Check for project branch pattern
+          PROJECT_BRANCH=$(git branch -a | grep -E "remotes/origin/project/.*/claude/issue-${ISSUE_NUMBER}" | head -1 | sed 's/remotes\/origin\///' | xargs)
+          
+          if [ -n "$PROJECT_BRANCH" ]; then
+            echo "Found project branch: $PROJECT_BRANCH"
+            git checkout -b "$PROJECT_BRANCH" "origin/$PROJECT_BRANCH" || git checkout "$PROJECT_BRANCH"
+            echo "CLAUDE_EXISTING_BRANCH=$PROJECT_BRANCH" >> $GITHUB_ENV
+            echo "CLAUDE_BASE_BRANCH=$PROJECT_BRANCH" >> $GITHUB_ENV
           else
             echo "No existing branch found for issue $ISSUE_NUMBER"
             echo "CLAUDE_EXISTING_BRANCH=" >> $GITHUB_ENV
@@ -120,34 +122,48 @@ jobs:
             
             MANDATORY WORKFLOW:
             1. First, check current branch: git branch --show-current
-            2. Search for existing branches: git branch -a | grep "issue-${{ github.event.issue.number }}"
+            2. Search for existing branches: git branch -a | grep -E "project/.*/claude/issue-${{ github.event.issue.number }}"
             
-            3. Decision logic:
-               - If existing branch found → Use it (NEVER create a new one)
+            3. Decision logic for NEW PROJECTS (Phase 1):
+               - Check if issue contains [project: xxx] or [extends: #XX] tags
+               - If tags exist → This is continuation work, skip to step 4
+               - Extract project name from issue title (kebab-case conversion)
+                 Example: "シンプルな名刺画像生成CLIツール" → "meishi-generator"
+                 Rule: Remove "- AI自動開発案件" suffix and convert to English kebab-case
+               - Create project main branch: git checkout -b project/{project-name}
+               - Create project directory and .project.yml
+               - Push project branch: git push -u origin project/{project-name}
+               - Create working branch: git checkout -b project/{project-name}/claude/issue-${{ github.event.issue.number }}-initial
+            
+            4. Decision logic for CONTINUING WORK:
+               - For Phase 2+ of same issue → Use existing branch (NEVER create new)
                  - git checkout {existing-branch}
                  - git pull origin {existing-branch}
-               - If no existing branch → This is Phase 1, create: git checkout -b claude/issue-${{ github.event.issue.number }}-$(date +%Y%m%d_%H%M%S)
+               - For new feature/bugfix on existing project ([project: xxx] tag):
+                 - git checkout project/{project-name}
+                 - git pull origin project/{project-name}
+                 - git checkout -b project/{project-name}/claude/issue-${{ github.event.issue.number }}-{feature}
             
-            4. For Phase 1 ONLY - MANDATORY PROJECT DIRECTORY:
+            5. For Phase 1 ONLY - MANDATORY PROJECT DIRECTORY:
                - Create project-specific directory with kebab-case naming
                - Examples: "PDF圧縮アプリ" → pdf-compressor/, "OCRサービス" → ocr-service/
                - MUST create directory and initial README.md in Phase 1
                - Create ONLY design documents in Phase 1
                - DO NOT implement any code in Phase 1
             
-            5. For continuing work (Phase 2+):
+            6. For continuing work (Phase 2+):
                - Run: git log --oneline -10
                - Read ALL files from previous phases
                - Build upon existing implementation
             
-            6. Always report your branch name in responses
+            7. Always report your branch name in responses
             
-            7. Quality checks before commit (if applicable):
+            8. Quality checks before commit (if applicable):
                - Run linting: npm run lint, yarn lint, ruff check, etc.
                - Run tests: npm test, pytest, etc.
                - Fix any issues before proceeding
             
-            8. CRITICAL - Commit and push at the end of EVERY phase:
+            9. CRITICAL - Commit and push at the end of EVERY phase:
                - git add -A
                - git commit -m "feat: Phase X implementation for Issue #${{ github.event.issue.number }}"
                - git push origin {your-branch-name}
@@ -157,25 +173,27 @@ jobs:
           
           # Custom instructions for phased development
           custom_instructions: |
-            ## 🚨 重要：ブランチ管理ルール
+            ## 🚨 重要：プロジェクトブランチ戦略
             
-            **絶対的なルール：各Issue/PRに対して単一のブランチのみを使用すること**
+            **絶対的なルール：すべての新規開発でプロジェクトブランチを使用**
             
-            1. **ブランチ名の規則**:
-               - 新規作成時のみ: `claude/issue-{issue_number}-{timestamp}`
-               - 既存ブランチがある場合: そのブランチを必ず使用
+            1. **ブランチ構造**:
+               - システム設定: `master`（CLAUDE.md、workflowsのみ）
+               - プロジェクトメイン: `project/{project-name}`
+               - 作業ブランチ（初期）: `project/{project-name}/claude/issue-{number}-initial`
+               - 作業ブランチ（継続）: `project/{project-name}/claude/issue-{number}-{feature}`
             
             2. **ブランチ確認手順**（毎回実行）:
                ```bash
                # 現在のIssueに関連するブランチを検索
-               git branch -a | grep "issue-{issue_number}"
+               git branch -a | grep -E "project/.*/claude/issue-{issue_number}"
                
                # 既存ブランチがある場合 → 必ずそれを使用
                git checkout {existing-branch-name}
                git pull origin {existing-branch-name}
                
-               # 既存ブランチがない場合 → Phase 1なので新規作成
-               git checkout -b claude/issue-{issue_number}-{timestamp}
+               # 既存ブランチがない場合 → Phase 1なのでプロジェクトブランチ戦略に従う
+               # （direct_promptのstep 3を参照）
                ```
             
             3. **フェーズ型開発プロセス**:
@@ -192,15 +210,16 @@ jobs:
             - ドキュメントが整備済み
             - コードレビュー準備完了
             
-            **プロジェクト完了時、プルリクエストを作成**：
+            **プロジェクト完了時、プロジェクトブランチへPRを作成**：
             ```bash
-            # PRを作成（ブランチ名を適切に設定）
-            gh pr create --title "feat: Issue #${{ github.event.issue.number }} - [プロジェクト名]" \
-                         --body "## 概要\n[実装内容の要約]\n\n## 実装フェーズ\n- Phase 1: 設計完了\n- Phase 2: MVP実装完了\n- Phase 3: 完全実装完了\n- Phase 4: 品質向上完了\n\nCloses #${{ github.event.issue.number }}"
+            # プロジェクトブランチへPRを作成
+            gh pr create --base project/{project-name} \
+                         --title "feat: Issue #${{ github.event.issue.number }} - [機能説明]" \
+                         --body "## 実装内容\n[実装内容の要約]\n\nCloses #${{ github.event.issue.number }}"
             ```
             
             注意：
-            - PRタイトルの[プロジェクト名]は実際のプロジェクト名に置き換える
+            - PRタイトルの[機能説明]は実装した機能の簡潔な説明に置き換える
             - PR本文の[実装内容の要約]は実装した機能の概要を記載
             - PR作成後、自動的にワークフローが完了を検出
             
@@ -230,19 +249,19 @@ jobs:
             5. **レビューポイント**:
                - 各フェーズ完了時に`@claude-review-needed`タグを追加
                - 必ず現在のブランチ名を報告に含める
-               - 例: "Phase 2完了 (branch: claude/issue-24-20250712_012315) @claude-review-needed"
+               - 例: "Phase 2完了 (branch: project/pdf-compressor/claude/issue-24-initial) @claude-review-needed"
             
-            9. **プロジェクト完了判定**:
+            6. **プロジェクト完了判定**:
                - すべてのフェーズが完了してもプロジェクトは自動完了しない
                - 品質基準を満たし、デプロイ可能な状態になったら完了
                - 完了時はgh pr createコマンドでPRを作成
             
-            6. **禁止事項**:
+            7. **禁止事項**:
                - 新しいフェーズで新しいブランチを作成すること
                - 前のフェーズの実装を無視すること
                - ゼロから再実装すること
             
-            7. **エラー時の対処**:
+            8. **エラー時の対処**:
                - ブランチが見つからない場合は、ユーザーに確認を求める
                - 勝手に新しいブランチを作成しない
           
