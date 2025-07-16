@@ -174,6 +174,15 @@ jobs:
           
           # Custom instructions for phased development
           custom_instructions: |
+            ## 🌏 日本語コミュニケーション必須
+            
+            **絶対的ルール**: GitHubへのすべてのコメントは日本語で記述すること
+            - フェーズ報告、エラーメッセージ、説明文すべて日本語使用
+            - 技術用語（Phase、Branch、Issue等）は英語のまま使用可
+            - コード内のコメントは英語でも可
+            - 例: "Phase 1完了" ✅、"Phase 1 completed" ❌
+            - ブランチ報告は必ず「**ブランチ**: `branch-name`」形式で記載
+            
             ## 🚨 重要：プロジェクトブランチ戦略
             
             **絶対的なルール：すべての新規開発でプロジェクトブランチを使用**
