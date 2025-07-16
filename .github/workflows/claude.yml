@@ -58,7 +58,7 @@ jobs:
           ISSUE_NUMBER="${{ github.event.issue.number }}"
           
           # Check for project branch pattern
-          PROJECT_BRANCH=$(git branch -a | grep -E "remotes/origin/project/.*/claude/issue-${ISSUE_NUMBER}" | head -1 | sed 's/remotes\/origin\///' | xargs)
+          PROJECT_BRANCH=$(git branch -a | grep -E "remotes/origin/project/.*[-/]claude[-/]issue-${ISSUE_NUMBER}" | head -1 | sed 's/remotes\/origin\///' | xargs)
           
           if [ -n "$PROJECT_BRANCH" ]; then
             echo "Found project branch: $PROJECT_BRANCH"
