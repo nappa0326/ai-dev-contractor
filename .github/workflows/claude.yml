@@ -75,6 +75,7 @@ jobs:
         id: claude
         uses: anthropics/claude-code-action@beta
         with:
+          github_token: ${{ secrets.CLAUDE_GITHUB_TOKEN }}
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           
           # Specify base branch for continuity (commented out - may not be implemented yet)
