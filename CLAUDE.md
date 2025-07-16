@@ -233,6 +233,12 @@ git push origin {現在のブランチ名}
                 --title "feat: Issue #XX - [機能説明]" \
                 --body "## 実装内容\n[実装内容の要約]\n\nCloses #XX"
    ```
+3. Phase 4の通常報告の後、以下の形式でプロジェクト完了を報告：
+   ```
+   #### Final Status:
+   🎉 **PROJECT COMPLETED** - [プロジェクト名] is production-ready
+   **Pull Request Created**: [#PR番号](PRのURL)
+   ```
 
 ### コミュニケーション
 
