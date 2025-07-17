@@ -34,7 +34,7 @@
         "body": "={{ $json.issue_body }}",
         "labels": [
           {
-            "label": "={{ $json.labels }}"
+            "label": "="
           }
         ],
         "assignees": [
@@ -68,7 +68,7 @@
           "value": "C094LNGF8H5",
           "mode": "id"
         },
-        "text": "=🚀 新規プロジェクト受注！  **プロジェクト名**: {{ $('Webhook').item.json.body.project_name }} **予算**: {{ $('Webhook').item.json.body.budget }} **期限**: {{ $('Webhook').item.json.body.deadline }}  **GitHub Issue**: {{ $('Create an issue').item.json.html_url }}  Claude Code による自動開発を開始します。",
+        "text": "={{ $('Webhook').item.json.body.command_type === 'extend' ? '?? 継続開発タスク受注！\\n\\n**タスクタイプ**: ' + $('Webhook').item.json.body.task_type + '\\n**元のIssue**: #' + $('Webhook').item.json.body.original_issue_number + '\\n**作業内容**: ' + $('Webhook').item.json.body.description + '\\n**GitHub Issue**: ' + $('HTTP Request - Create an issue').item.json.html_url + '\\n\\nClaude Code による開発を開始します。' : '??  新規プロジェクト受注！\\n\\n**プロジェクト名**: ' + $('Webhook').item.json.body.project_name + '\\n**予算**: ' + $('Webhook').item.json.body.budget + '\\n**期限**: ' + $('Webhook').item.json.body.deadline + '\\n**GitHub Issue**: ' + $('HTTP Request - Create an issue').item.json.html_url + '\\n\\nClaude Code による自動開発を開始します。' }}",
         "otherOptions": {}
       },
       "type": "n8n-nodes-base.slack",
@@ -90,7 +90,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "{\n  \"status\": \"success\",\n  \"message\": \"プロジェクトを受注いたしました\",\n  \"project_name\": \"{{ $('Webhook').item.json.project_name }}\",\n  \"github_issue\": \"{{ $('GitHub').item.json.html_url }}\",\n  \"issue_number\": \"{{ $('GitHub').item.json.number }}\",\n  \"estimated_completion\": \"{{ $('AI Agent').item.json.output.match(/工数見積もり[:\\\\s]*([^\\\\n]+)/)?.[1] || '2-4時間以内' }}\",\n  \"next_steps\": [\n    \"GitHub Issueが作成されました\",\n    \"Claude Codeによる自動開発が開始されます\",\n    \"完了時に自動通知をお送りします\"\n  ],\n  \"contact\": \"進捗は GitHub Issue で確認できます\"\n}",
+        "responseBody": "{\n  \"status\": \"success\",\n  \"message\": \"プロジェクトを受注いたしました\",\n  \"project_name\": \"{{ $('Webhook').item.json.body.project_name || $('Webhook').item.json.body.description }}\",\n  \"github_issue\": \"{{ $('HTTP Request - Create an issue').item.json.html_url }}\",\n  \"issue_number\": \"{{ $('HTTP Request - Create an issue').item.json.number }}\",\n  \"estimated_completion\": \"{{ $('AI Agent').item.json.output.match(/工数見積もり[:\\\\s]*([^\\\\n]+)/)?.[1] || '2-4時間以内' }}\",\n  \"next_steps\": [\n    \"GitHub Issueが作成されました\",\n    \"Claude Codeによる自動開発が開始されます\",\n    \"完了時に自動通知をお送りします\"\n  ],\n  \"contact\": \"進捗は GitHub Issue で確認できます\"\n}\n",
         "options": {}
       },
       "type": "n8n-nodes-base.respondToWebhook",
@@ -105,9 +105,9 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "=以下のプロジェクト情報を分析してください：\n\nプロジェクト名: {{ $json.body.project_name }}\n要件: {{ $json.body.requirements }}\n予算: {{ $json.body.budget }}\n期限: {{ $json.body.deadline }}\n優先度: {{ $json.body.priority }}\n連絡先: {{ $json.body.contact_info }}\n技術的希望: {{ $json.body.technical_preferences }}",
+        "text": "={{ $json.body.command_type === 'extend' ?  '以下の継続開発タスクを分析してください：\\n\\nタスクタイプ: ' + $json.body.task_type + '\\n元のIssue: #' + $json.body.original_issue_number + '\\n作業内容: ' + $json.body.description + '\\n優先度: ' + $json.body.priority + '\\n連絡先: ' + $json.body.contact_info : '以下のプロジェクト情報を分析してください：\\n\\nプロジェクト名: ' + $json.body.project_name + '\\n要件: ' + $json.body.requirements + '\\n予算: ' + $json.body.budget + '\\n期限: ' + $json.body.deadline + '\\n優先度: ' + $json.body.priority + '\\n連絡先: ' + $json.body.contact_info + '\\n技術的希望: ' + $json.body.technical_preferences }}",
         "options": {
-          "systemMessage": "あなたは経験豊富なプロジェクトマネージャーです。\n受信したプロジェクト要件を分析し、以下の形式で技術仕様書を作成してください：\n\n## 技術仕様書\n\n### 1. プロジェクト概要\n- プロジェクト名: {{ $json.project_name }}\n- 概要: 要件から読み取れる主要機能を簡潔に説明\n\n### 2. 推奨技術スタック\n- フロントエンド: 要件に最適な技術を選定\n- バックエンド: 適切なサーバー技術\n- データベース: データ要件に応じた選択\n- その他: 必要な追加技術\n\n### 3. 機能要件詳細\n- 主要機能の詳細リスト\n- 各機能の実装優先度\n\n### 4. 工数見積もり\n- 開発期間の見積もり\n- 人月換算での工数\n\n### 5. リスク分析\n- 技術的リスク\n- スケジュールリスク\n- 品質リスク\n\n### 6. 成功基準\n- 完成品の品質基準\n- テスト要件\n\n最後に、GitHub Issue用のタイトルと説明文をMarkdown形式で生成してください。"
+          "systemMessage": "{{ $json.body.command_type === 'extend' ?  'あなたは経験豊富な技術リーダーです。\\n継続開発タスクの要件を分析し、以下の形式で実装計画を作成してください ：\\n\\n## 実装計画\\n\\n### 1. タスク概要\\n- タスクタイプ: ' + $json.body.task_type + '\\n- 元のIssue: #' + $json.body.original_issue_number + '\\n- 作業内容の要約\\n\\n### 2. 影響範囲分析\\n- 変更が必要なファイル/コンポーネント\\n- 既存機能への影響\\n- テストすべき項目\\n\\n### 3. 実装方針\\n- 具体的な実装手順\\n- 使用する技術/パターン\\n- 注意すべきポイント\\n\\n### 4. 工数見積もり\\n- 作業時間の見積もり\\n- リスク要因\\n\\n### 5. テスト計画\\n- 単体テストの内容\\n- 結合テストの内容\\n- 動作確認手順\\n\\n最後に、実装の要点を簡潔にまとめてください。' : 'あなたは経験豊富なプロジェクトマネージャーです。\\n受信したプロジェクト要件を分析し、以下の形式で技術仕様書 を作成してください：\\n\\n## 技術仕様書\\n\\n### 1. プロジェクト概要\\n- プロジェクト名: ' + $json.project_name + '\\n- 概要: 要件から読み取れる主要機能を簡潔に説明\\n\\n### 2. 推奨技術スタック\\n- フロントエンド: 要件に最適な技術を選定\\n- バックエンド: 適切なサーバー技術\\n- データベース: データ要件に応じた選択\\n- その他: 必要な追加技術\\n\\n### 3. 機能要件詳細\\n- 主要機能の詳細リスト\\n- 各機能の実装優先度\\n\\n### 4.  工数見積もり\\n- 開発期間の見積もり\\n- 人月換算での工数\\n\\n### 5. リスク分析\\n- 技術的リスク\\n- スケジュールリスク\\n- 品質リスク\\n\\n### 6. 成功基準\\n- 完成品の品質基準\\n- テスト要件\\n\\n最後に、GitHub Issue用のタイトルと説明文をMarkdown形式で生成してください。' }}"
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
@@ -159,7 +159,7 @@
     },
     {
       "parameters": {
-        "jsCode": "  // AI Agentの出力とWebhookデータを取得\n  const aiOutput = $('AI Agent').first().json.output;\n  const orderData = $('Webhook').first().json.body;\n\n  // コマンドタイプによる分岐\n  if (!orderData.command_type || orderData.command_type === 'new') {\n    // 新規プロジェクトの場合（既存の動作を維持）\n    return {\n      json: {\n        issue_title: `${orderData.project_name} - AI自動開発案件`,\n        issue_body: `## プロジェクト発注情報\n\n  **発注日時**: ${new Date().toISOString()}\n  **プロジェクト名**: ${orderData.project_name}\n  **要件**: ${orderData.requirements}\n  **予算**: ${orderData.budget}\n  **期限**: ${orderData.deadline}\n  **優先度**: ${orderData.priority}\n\n  ---\n\n  ## AI分析結果\n\n  ${aiOutput}\n\n  ---\n\n  ## 開発指示\n\n  @claude 上記の技術仕様書に基づいて、完全なプロジェクトを作成してください。\n\n  ### 成果物要件:\n  1. 完全なソースコード\n  2. README.md（セットアップ手順含む）\n  3. 基本的なテストコード\n  4. package.json/requirements.txt（依存関係）\n  5. 基本的なAPI仕様書（該当する場合）\n\n  ### 品質基準:\n  - コードは本番運用可能なレベル\n  - セキュリティベストプラクティスに従う\n  - レスポンシブデザイン対応（Webアプリの場合）\n  - 基本的なエラーハンドリング実装\n\n  ### 技術スタック推奨:\n  AI分析結果の推奨技術スタックを参考にしてください。\n\n  完了時にはプルリクエストを作成し、デプロイ可能な状態で納品してください。`,\n        labels: ['ai-development', 'auto-order'].map(label => ({ label }))\n      }\n    };\n\n  } else if (orderData.command_type === 'extend') {\n    // 継続開発の場合\n    const taskTypeLabels = {\n      'fix': 'バグ修正',\n      'bugfix': 'バグ修正',\n      'enhance': '機能追加',\n      'refactor': 'リファクタリング',\n      'update': '更新',\n      'security': 'セキュリティ',\n      'docs': 'ドキュメント',\n      'test': 'テスト',\n      'perf': 'パフォーマンス'\n    };\n\n    const taskLabel = taskTypeLabels[orderData.task_type] || orderData.task_type;\n    const issueTitle = `[${taskLabel}] Issue #${orderData.original_issue_number} - ${orderData.description}`;\n\n    // タスクタイプに応じた@claudeコマンドを生成\n    const claudeCommand = orderData.task_type === 'bugfix' ?\n      `@claude [bugfix: #${orderData.original_issue_number}] ${orderData.description}` :\n      `@claude [extends: #${orderData.original_issue_number}] ${orderData.description}`;\n\n    const issueBody = `## 作業内容\n  ${orderData.description}\n\n  ## 元のIssue\n  #${orderData.original_issue_number}\n\n  ## タスクタイプ\n  ${orderData.task_type} (${taskLabel})\n\n  ## 優先度\n  ${orderData.priority}\n\n  ## 連絡先\n  ${orderData.contact_info}\n\n  ---\n\n  ## AI分析結果\n\n  ${aiOutput}\n\n  ---\n\n  ${claudeCommand}`;\n\n    return {\n      json: {\n        issue_title: issueTitle,\n        issue_body: issueBody,\n        labels: ['ai-development', 'auto-order', taskLabel, '継続開発'].map(label => ({ label }))\n      }\n    };\n  }"
+        "jsCode": "  // AI Agentの出力とWebhookデータを取得\n  const aiOutput = $('AI Agent').first().json.output;\n  const orderData = $('Webhook').first().json.body;\n\n  // コマンドタイプによる分岐\n  if (!orderData.command_type || orderData.command_type === 'new') {\n    // 新規プロジェクトの場合（既存の動作を維持）\n    const issueTitle = `${orderData.project_name} - AI自動開発案件`;\n    const issueBody = `## プロジェクト発注情報\n\n  **発注日時**: ${new Date().toISOString()}\n  **プロジェクト名**: ${orderData.project_name}\n  **要件**: ${orderData.requirements}\n  **予算**: ${orderData.budget}\n  **期限**: ${orderData.deadline}\n  **優先度**: ${orderData.priority}\n\n  ---\n\n  ## AI分析結果\n\n  ${aiOutput}\n\n  ---\n\n  ## 開発指示\n\n  @claude 上記の技術仕様書に基づいて、完全なプロジェクトを作成してください。\n\n  ### 成果物要件:\n  1. 完全なソースコード\n  2. README.md（セットアップ手順含む）\n  3. 基本的なテストコード\n  4. package.json/requirements.txt（依存関係）\n  5. 基本的なAPI仕様書（該当する場合）\n\n  ### 品質基準:\n  - コードは本番運用可能なレベル\n  - セキュリティベストプラクティスに従う\n  - レスポンシブデザイン対応（Webアプリの場合）\n  - 基本的なエラーハンドリング実装\n\n  ### 技術スタック推奨:\n  AI分析結果の推奨技術スタックを参考にしてください。\n\n  完了時にはプルリクエストを作成し、デプロイ可能な状態で納品してください。`;\n\n    return {\n      json: {\n        // GitHub API用の完全なリクエストボディ\n        request_body: {\n          title: issueTitle,\n          body: issueBody,\n          labels: ['ai-development', 'auto-order'],\n          assignees: ['nappa0326']\n        }\n      }\n    };\n\n  } else if (orderData.command_type === 'extend') {\n    // 継続開発の場合\n    // タスクタイプのマッピングをMapで定義（型安全）\n    const taskTypeLabelMap = new Map([\n      ['fix', 'バグ修正'],\n      ['bugfix', 'バグ修正'],\n      ['enhance', '機能追加'],\n      ['refactor', 'リファクタリング'],\n      ['update', '更新'],\n      ['security', 'セキュリティ'],\n      ['docs', 'ドキュメント'],\n      ['test', 'テスト'],\n      ['perf', 'パフォーマンス']\n    ]);\n\n    // task_typeを取得してラベルを決定\n    const taskType = orderData.task_type || '';\n    const taskLabel = taskTypeLabelMap.get(taskType) || taskType;\n\n    const issueTitle = `[${taskLabel}] Issue #${orderData.original_issue_number} - ${orderData.description}`;\n\n    // タスクタイプに応じた@claudeコマンドを生成\n    const claudeCommand = taskType === 'bugfix' ?\n      `@claude [bugfix: #${orderData.original_issue_number}] ${orderData.description}` :\n      `@claude [extends: #${orderData.original_issue_number}] ${orderData.description}`;\n\n    const issueBody = `## 作業内容\n  ${orderData.description}\n\n  ## 元のIssue\n  #${orderData.original_issue_number}\n\n  ## タスクタイプ\n  ${taskType} (${taskLabel})\n\n  ## 優先度\n  ${orderData.priority}\n\n  ## 連絡先\n  ${orderData.contact_info}\n\n  ---\n\n  ## AI分析結果\n\n  ${aiOutput}\n\n  ---\n\n  ${claudeCommand}`;\n\n    return {\n      json: {\n        // GitHub API用の完全なリクエストボディ\n        request_body: {\n          title: issueTitle,\n          body: issueBody,\n          labels: ['ai-development', 'auto-order', taskLabel, '継続開発'],\n          assignees: ['nappa0326']\n        }\n      }\n    };\n  }"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -169,19 +169,48 @@
       ],
       "id": "5e1b19fd-31c6-4ba1-8ab5-9fb6e6223bda",
       "name": "Code"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.github.com/repos/nappa0326/ai-development-company/issues",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.request_body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        760,
+        280
+      ],
+      "id": "e631f587-a482-479f-b902-ab98b94b1ed4",
+      "name": "HTTP Request - Create an issue",
+      "credentials": {
+        "githubApi": {
+          "id": "pY9qy7slGFPBmR5S",
+          "name": "GitHub account"
+        }
+      }
     }
   ],
   "pinData": {},
   "connections": {
     "Create an issue": {
       "main": [
-        [
-          {
-            "node": "Send a message",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        []
       ]
     },
     "Send a message": {
@@ -243,7 +272,18 @@
       "main": [
         [
           {
-            "node": "Create an issue",
+            "node": "HTTP Request - Create an issue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Create an issue": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
             "type": "main",
             "index": 0
           }
@@ -257,7 +297,7 @@
     "callerPolicy": "workflowsFromSameOwner",
     "errorWorkflow": "V00wqOQfw5vs8CVQ"
   },
-  "versionId": "68d45b7a-09d9-408a-a328-681150f944e0",
+  "versionId": "58ed5055-d392-46d3-85c7-82cac4234687",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "b9ad821e1bac462e0829b0fcfa0ee54572f5b3a4dad3925c8cb3c5dae1bcef22"

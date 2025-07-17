@@ -110,7 +110,8 @@ jobs:
             CRITICAL RULES - MUST FOLLOW REGARDLESS OF PROJECT COMPLEXITY:
             
             1. PHASED DEVELOPMENT IS MANDATORY
-               - ALWAYS implement in 4 separate phases
+               - NEW PROJECTS: ALWAYS implement in 4 separate phases
+               - CONTINUATION TASKS: Follow task-specific phase count (1-4 phases)
                - NEVER complete multiple phases in one execution
                - Each phase MUST end with @claude-review-needed tag
                - Wait for user approval before proceeding to next phase
@@ -125,8 +126,11 @@ jobs:
             2. Search for existing branches: git branch -a | grep -E "project/.*/claude/issue-${{ github.event.issue.number }}"
             
             3. Decision logic for NEW PROJECTS (Phase 1):
-               - Check if issue contains [project: xxx] or [extends: #XX] tags
-               - If tags exist → This is continuation work, skip to step 4
+               - Check if issue contains continuation tags:
+                 [project: xxx], [extends: #XX], [bugfix: #XX], [enhance: #XX], 
+                 [refactor: #XX], [fix: #XX], [update: #XX], [security: #XX], 
+                 [docs: #XX], [test: #XX], [perf: #XX]
+               - If any tags exist → This is continuation work, skip to step 4
                - Extract project name from issue title (kebab-case conversion)
                  Example: "シンプルな名刺画像生成CLIツール" → "meishi-generator"
                  Rule: Remove "- AI自動開発案件" suffix and convert to English kebab-case
@@ -139,10 +143,22 @@ jobs:
                - For Phase 2+ of same issue → Use existing branch (NEVER create new)
                  - git checkout {existing-branch}
                  - git pull origin {existing-branch}
-               - For new feature/bugfix on existing project ([project: xxx] tag):
+               - For continuation development tasks:
+                 - Extract task type from tags: fix, bugfix, enhance, refactor, update, security, docs, test, perf
+                 - Extract project name:
+                   * From [project: xxx] tag if present
+                   * Otherwise, from referenced issue ([bugfix: #XX] → look up issue #XX's project):
+                     1. Use GitHub API to get issue #XX details
+                     2. Check issue #XX's labels or body for project name
+                     3. Search for project branch: git branch -a | grep -E "project/.*/claude/issue-XX"
+                     4. Extract project name from found branch
                  - git checkout project/{project-name}
                  - git pull origin project/{project-name}
-                 - git checkout -b project/{project-name}/claude/issue-${{ github.event.issue.number }}-{feature}
+                 - git checkout -b project/{project-name}/claude/issue-${{ github.event.issue.number }}-{task-type}
+                 - Examples:
+                   * [bugfix: #44] → branch: project/{name}/claude/issue-XX-bugfix
+                   * [enhance: #44] → branch: project/{name}/claude/issue-XX-enhance
+                   * [refactor: #44] → branch: project/{name}/claude/issue-XX-refactor
             
             5. For Phase 1 ONLY - MANDATORY PROJECT DIRECTORY:
                - Create project-specific directory with kebab-case naming
@@ -164,9 +180,7 @@ jobs:
                - Fix any issues before proceeding
             
             9. CRITICAL - Commit and push at the end of EVERY phase:
-               - git add -A
-               - git commit -m "feat: Phase X implementation for Issue #${{ github.event.issue.number }}"
-               - git push origin {your-branch-name}
+               - Follow the git operations in CLAUDE.md "各フェーズ完了時の必須作業" section
                - NEVER complete a phase without pushing to remote
                - After push, add comment with @claude-review-needed
                - STOP execution and wait for user response
@@ -192,24 +206,27 @@ jobs:
                - 作業ブランチ（初期）: `project/{project-name}/claude/issue-{number}-initial`
                - 作業ブランチ（継続）: `project/{project-name}/claude/issue-{number}-{feature}`
             
-            2. **ブランチ確認手順**（毎回実行）:
-               ```bash
-               # 現在のIssueに関連するブランチを検索
-               git branch -a | grep -E "project/.*/claude/issue-{issue_number}"
-               
-               # 既存ブランチがある場合 → 必ずそれを使用
-               git checkout {existing-branch-name}
-               git pull origin {existing-branch-name}
-               
-               # 既存ブランチがない場合 → Phase 1なのでプロジェクトブランチ戦略に従う
-               # （direct_promptのstep 3を参照）
-               ```
+            2. **ブランチ確認手順**:
+               CLAUDE.mdのブランチ管理手順セクションを参照してください。
             
             3. **フェーズ型開発プロセス**:
+               
+               **新規プロジェクト（4フェーズ）**:
                - Phase 1 (20%): 設計書を作成し、ユーザーレビューを待つ
                - Phase 2 (50%): **同一ブランチで**MVPを実装
                - Phase 3 (80%): **同一ブランチで**完全実装
                - Phase 4 (100%): **同一ブランチで**品質向上・ドキュメント整備
+               
+               **継続開発タスク（タスクタイプ別フェーズ構成）**:
+               - fix（軽微な修正）: 1フェーズ（100%で完了）
+               - bugfix（バグ修正）: 2フェーズ（40% → 100%）
+               - enhance（機能追加）: 3フェーズ（30% → 70% → 100%）
+               - refactor（リファクタリング）: 3-4フェーズ（25% → 50% → 75% → 100%）
+               - update（依存関係更新）: 2-3フェーズ
+               - security（セキュリティ対応）: 2-3フェーズ
+               - docs（ドキュメント整備）: 1-2フェーズ
+               - test（テスト追加）: 2フェーズ
+               - perf（パフォーマンス改善）: 3フェーズ
             
             ## 📌 プロジェクト完了とPR作成
             
@@ -233,20 +250,9 @@ jobs:
             - PR作成後、自動的にワークフローが完了を検出
             
             ## 🚨 各フェーズ完了時の必須作業
-            **絶対的ルール：各フェーズの作業を完了する前に必ず以下を実行**
+            **CLAUDE.mdの「各フェーズ完了時の必須作業」セクションを参照してください。**
             
-            ```bash
-            # 1. すべての変更をステージング
-            git add -A
-            
-            # 2. フェーズ完了をコミット
-            git commit -m "feat: Phase X implementation for Issue #${{ github.event.issue.number }}"
-            
-            # 3. リモートにプッシュ（これを忘れると次回新しいブランチが作成される！）
-            git push origin {現在のブランチ名}
-            ```
-            
-            **警告**: プッシュを忘れると、次回の実行時に既存ブランチが見つからず、
+            **重要**: プッシュを忘れると、次回の実行時に既存ブランチが見つからず、
             新しいブランチが作成されてしまい、フェーズ間の連続性が失われます。
             
             4. **各フェーズでの作業**:
