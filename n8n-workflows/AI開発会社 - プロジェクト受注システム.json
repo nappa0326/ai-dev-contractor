@@ -30,14 +30,11 @@
           "value": "ai-development-company",
           "mode": "name"
         },
-        "title": "={{ $('Webhook').item.json.body.project_name }} - AI自動開発案件",
-        "body": "=## プロジェクト発注情報\n\n**発注日時**: {{ new Date().toISOString() }}\n**プロジェクト名**: {{ $('Webhook').item.json.body.project_name }}\n**要件**: {{ $('Webhook').item.json.body.requirements }}\n**予算**: {{ $('Webhook').item.json.body.budget }}\n**期限**: {{ $('Webhook').item.json.body.deadline }}\n**優先度**: {{ $('Webhook').item.json.body.priority }}\n\n---\n\n## AI分析結果\n\n{{ $('AI Agent').item.json.output }}\n\n---\n\n## 開発指示\n\n@claude 上記の技術仕様書に基づいて、完全なプロジェクトを作成してください。\n\n### 成果物要件:\n1. 完全なソースコード\n2. README.md（セットアップ手順含む）\n3. 基本的なテストコード\n4. package.json/requirements.txt（依存関係）\n5. 基本的なAPI仕様書（該当する場合）\n\n### 品質基準:\n- コードは本番運用可能なレベル\n- セキュリティベストプラクティスに従う\n- レスポンシブデザイン対応（Webアプリの場合）\n- 基本的なエラーハンドリング実装\n\n### 技術スタック推奨:\nAI分析結果の推奨技術スタックを参考にしてください。\n\n完了時にはプルリクエストを作成し、デプロイ可能な状態で納品してください。",
+        "title": "={{ $json.issue_title }}",
+        "body": "={{ $json.issue_body }}",
         "labels": [
           {
-            "label": "ai-development"
-          },
-          {
-            "label": "auto-order"
+            "label": "={{ $json.labels }}"
           }
         ],
         "assignees": [
@@ -49,7 +46,7 @@
       "type": "n8n-nodes-base.github",
       "typeVersion": 1.1,
       "position": [
-        540,
+        740,
         0
       ],
       "id": "555d5757-b1ff-49f6-b35b-65c29a3348d7",
@@ -77,7 +74,7 @@
       "type": "n8n-nodes-base.slack",
       "typeVersion": 2.3,
       "position": [
-        740,
+        940,
         0
       ],
       "id": "1c071c7b-f85c-4aaf-ae43-618ba555155c",
@@ -99,7 +96,7 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        940,
+        1140,
         0
       ],
       "id": "13fc1abd-4530-4034-96f1-7b9a71c8bfb8",
@@ -159,6 +156,19 @@
       ],
       "id": "75c71d0c-372b-4e6d-ad81-b158e78c0186",
       "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "jsCode": "  // AI Agentの出力とWebhookデータを取得\n  const aiOutput = $('AI Agent').first().json.output;\n  const orderData = $('Webhook').first().json.body;\n\n  // コマンドタイプによる分岐\n  if (!orderData.command_type || orderData.command_type === 'new') {\n    // 新規プロジェクトの場合（既存の動作を維持）\n    return {\n      json: {\n        issue_title: `${orderData.project_name} - AI自動開発案件`,\n        issue_body: `## プロジェクト発注情報\n\n  **発注日時**: ${new Date().toISOString()}\n  **プロジェクト名**: ${orderData.project_name}\n  **要件**: ${orderData.requirements}\n  **予算**: ${orderData.budget}\n  **期限**: ${orderData.deadline}\n  **優先度**: ${orderData.priority}\n\n  ---\n\n  ## AI分析結果\n\n  ${aiOutput}\n\n  ---\n\n  ## 開発指示\n\n  @claude 上記の技術仕様書に基づいて、完全なプロジェクトを作成してください。\n\n  ### 成果物要件:\n  1. 完全なソースコード\n  2. README.md（セットアップ手順含む）\n  3. 基本的なテストコード\n  4. package.json/requirements.txt（依存関係）\n  5. 基本的なAPI仕様書（該当する場合）\n\n  ### 品質基準:\n  - コードは本番運用可能なレベル\n  - セキュリティベストプラクティスに従う\n  - レスポンシブデザイン対応（Webアプリの場合）\n  - 基本的なエラーハンドリング実装\n\n  ### 技術スタック推奨:\n  AI分析結果の推奨技術スタックを参考にしてください。\n\n  完了時にはプルリクエストを作成し、デプロイ可能な状態で納品してください。`,\n        labels: ['ai-development', 'auto-order'].map(label => ({ label }))\n      }\n    };\n\n  } else if (orderData.command_type === 'extend') {\n    // 継続開発の場合\n    const taskTypeLabels = {\n      'fix': 'バグ修正',\n      'bugfix': 'バグ修正',\n      'enhance': '機能追加',\n      'refactor': 'リファクタリング',\n      'update': '更新',\n      'security': 'セキュリティ',\n      'docs': 'ドキュメント',\n      'test': 'テスト',\n      'perf': 'パフォーマンス'\n    };\n\n    const taskLabel = taskTypeLabels[orderData.task_type] || orderData.task_type;\n    const issueTitle = `[${taskLabel}] Issue #${orderData.original_issue_number} - ${orderData.description}`;\n\n    // タスクタイプに応じた@claudeコマンドを生成\n    const claudeCommand = orderData.task_type === 'bugfix' ?\n      `@claude [bugfix: #${orderData.original_issue_number}] ${orderData.description}` :\n      `@claude [extends: #${orderData.original_issue_number}] ${orderData.description}`;\n\n    const issueBody = `## 作業内容\n  ${orderData.description}\n\n  ## 元のIssue\n  #${orderData.original_issue_number}\n\n  ## タスクタイプ\n  ${orderData.task_type} (${taskLabel})\n\n  ## 優先度\n  ${orderData.priority}\n\n  ## 連絡先\n  ${orderData.contact_info}\n\n  ---\n\n  ## AI分析結果\n\n  ${aiOutput}\n\n  ---\n\n  ${claudeCommand}`;\n\n    return {\n      json: {\n        issue_title: issueTitle,\n        issue_body: issueBody,\n        labels: ['ai-development', 'auto-order', taskLabel, '継続開発'].map(label => ({ label }))\n      }\n    };\n  }"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        540,
+        0
+      ],
+      "id": "5e1b19fd-31c6-4ba1-8ab5-9fb6e6223bda",
+      "name": "Code"
     }
   ],
   "pinData": {},
@@ -222,6 +232,17 @@
       "main": [
         [
           {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
             "node": "Create an issue",
             "type": "main",
             "index": 0
@@ -236,7 +257,7 @@
     "callerPolicy": "workflowsFromSameOwner",
     "errorWorkflow": "V00wqOQfw5vs8CVQ"
   },
-  "versionId": "ac359837-56d1-4505-9c79-519ea483493f",
+  "versionId": "68d45b7a-09d9-408a-a328-681150f944e0",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "b9ad821e1bac462e0829b0fcfa0ee54572f5b3a4dad3925c8cb3c5dae1bcef22"

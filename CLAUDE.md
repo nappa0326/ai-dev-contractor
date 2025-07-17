@@ -245,3 +245,109 @@ git push origin {現在のブランチ名}
 - 各フェーズの成果物を明確に説明する
 - 次のフェーズで何を実装するか予告する
 - 技術的な選択の理由を説明する
+
+## 継続開発フロー
+
+### 概要
+既存プロジェクトへの機能追加、バグ修正、リファクタリングなどの継続開発をサポートします。
+
+### Issue記法の拡張
+
+```markdown
+# 軽微な修正（1フェーズ）
+@claude [fix: #元Issue番号] タイポ修正、設定値変更など
+
+# バグ修正（2フェーズ）
+@claude [bugfix: #元Issue番号] エラーや不具合の修正
+
+# 機能追加（3フェーズ）
+@claude [enhance: #元Issue番号] 新機能追加や既存機能の拡張
+
+# リファクタリング（3-4フェーズ）
+@claude [refactor: #元Issue番号] コード構造の改善、技術的負債の解消
+
+# 依存関係更新（2-3フェーズ）
+@claude [update: #元Issue番号] ライブラリやフレームワークの更新
+
+# セキュリティ対応（2-3フェーズ）
+@claude [security: #元Issue番号] 脆弱性修正、セキュリティ強化
+
+# ドキュメント整備（1-2フェーズ）
+@claude [docs: #元Issue番号] README更新、APIドキュメント作成
+
+# テスト追加（2フェーズ）
+@claude [test: #元Issue番号] テストカバレッジ向上
+
+# パフォーマンス改善（3フェーズ）
+@claude [perf: #元Issue番号] 処理速度向上、最適化
+```
+
+### ブランチ戦略
+
+継続開発では、プロジェクトメインブランチから新しい作業ブランチを作成します：
+
+```
+# 元のプロジェクトブランチ
+project/{project-name}
+
+# 継続開発用ブランチ
+project/{project-name}/claude/issue-{新Issue番号}-{タスクタイプ}
+```
+
+例：
+- `project/pdf-compressor/claude/issue-67-enhance`
+- `project/pdf-compressor/claude/issue-68-bugfix`
+- `project/pdf-compressor/claude/issue-69-refactor`
+
+### タスクタイプ別フェーズ構成
+
+#### fix（軽微な修正）- 1フェーズ
+- **Phase 1 (100%)**: 修正と確認
+
+#### bugfix（バグ修正）- 2フェーズ
+- **Phase 1 (40%)**: 原因分析と修正計画
+- **Phase 2 (100%)**: 修正実装とテスト
+
+#### enhance（機能追加）- 3フェーズ
+- **Phase 1 (30%)**: 設計と既存コードへの影響分析
+- **Phase 2 (70%)**: 実装
+- **Phase 3 (100%)**: 統合テストとドキュメント更新
+
+#### refactor（リファクタリング）- 3-4フェーズ
+- **Phase 1 (25%)**: 現状分析とリファクタリング計画
+- **Phase 2 (50%)**: 基盤部分の変更
+- **Phase 3 (75%)**: 機能部分の変更
+- **Phase 4 (100%)**: 最終調整と検証（大規模な場合）
+
+### 開発手順
+
+1. **元プロジェクトの確認**
+   ```bash
+   # タグから元のIssue番号を特定
+   # 元のプロジェクトディレクトリを確認
+   cd {project-name}/
+   ```
+
+2. **作業ブランチの作成**
+   ```bash
+   # プロジェクトメインブランチから分岐
+   git checkout project/{project-name}
+   git pull origin project/{project-name}
+   git checkout -b project/{project-name}/claude/issue-{新番号}-{タスクタイプ}
+   ```
+
+3. **既存コードの理解**
+   - プロジェクトのREADMEを確認
+   - 関連ファイルの構造を理解
+   - 元のIssueとPRを参照
+
+4. **タスクタイプに応じた開発**
+   - 各フェーズで適切な作業を実施
+   - `@claude-review-needed`タグで承認を求める
+
+5. **完了時のPR作成**
+   ```bash
+   gh pr create --base project/{project-name} \
+                --title "{タスクタイプ}: {説明}" \
+                --body "## 変更内容\n[詳細]\n\nRelated to #元Issue番号"
+   ```
