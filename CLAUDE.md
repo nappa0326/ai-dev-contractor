@@ -382,6 +382,6 @@ project/{project-name}/claude/issue-{新Issue番号}-{タスクタイプ}
 **継続開発の各タスクタイプ最終フェーズ完了時**:
 ```
 #### Final Status:
-✅ **TASK COMPLETED** - [タスク説明] 
+🎉 **PROJECT COMPLETED** - [タスク説明] 
 **Pull Request Created**: [#PR番号](PRのURL)
 ```
