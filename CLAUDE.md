@@ -351,3 +351,37 @@ project/{project-name}/claude/issue-{新Issue番号}-{タスクタイプ}
                 --title "{タスクタイプ}: {説明}" \
                 --body "## 変更内容\n[詳細]\n\nRelated to #元Issue番号"
    ```
+
+### Issue作成時の必須事項
+
+#### ラベルの設定
+**新規プロジェクト**:
+- `新規開発` ラベルを設定
+
+**継続開発**:
+- `継続開発` ラベルを設定
+- タスクタイプに応じた追加ラベル:
+  - [fix: #XX] → `軽微な修正`
+  - [bugfix: #XX] → `バグ修正`
+  - [enhance: #XX] → `機能追加`
+  - [refactor: #XX] → `リファクタリング`
+  - [update: #XX] → `依存関係更新`
+  - [security: #XX] → `セキュリティ`
+  - [docs: #XX] → `ドキュメント`
+  - [test: #XX] → `テスト`
+  - [perf: #XX] → `パフォーマンス`
+
+#### 完了報告の形式
+**新規プロジェクト完了時（Phase 4）**:
+```
+#### Final Status:
+🎉 **PROJECT COMPLETED** - [プロジェクト名] is production-ready
+**Pull Request Created**: [#PR番号](PRのURL)
+```
+
+**継続開発の各タスクタイプ最終フェーズ完了時**:
+```
+#### Final Status:
+✅ **TASK COMPLETED** - [タスク説明] 
+**Pull Request Created**: [#PR番号](PRのURL)
+```
