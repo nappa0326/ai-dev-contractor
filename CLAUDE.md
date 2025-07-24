@@ -239,13 +239,15 @@ gh pr create --base project/{project-name} \
 - コードレビュー準備完了
 
 完了時は、以下を実行：
-1. Phase 4のPRがマージされたことを確認
-2. Phase 4の通常報告の後、以下の形式でプロジェクト完了を報告：
+1. Phase 4のPRを作成
+2. Phase 4の報告内で、**必ず最後に**以下の形式でプロジェクト完了を報告：
    ```
    #### Final Status:
    🎉 **PROJECT COMPLETED** - [プロジェクト名] is production-ready
    **Pull Request Created**: [#PR番号](PRのURL)
    ```
+   
+**重要**: Phase 4の`@claude-review-needed`タグの前に、必ずこの「Final Status:」セクションを含めること
 
 ### コミュニケーション
 
