@@ -66,7 +66,8 @@ jobs:
             PHASE_NUMBER=$DETECTED_PHASE
           else
             # Detect phase from existing branches
-            EXISTING_PHASES=$(git branch -a | grep -E "remotes/origin/project/.*/claude/issue-$ISSUE_NUMBER-phase[0-9]+" | grep -oE "phase[0-9]+" | grep -oE "[0-9]+" | sort -n | tail -1)
+            # 新しいパターン: {project-name}-{issue-number}-phase{N}
+            EXISTING_PHASES=$(git branch -a | grep -E "remotes/origin/[^/]+-$ISSUE_NUMBER-phase[0-9]+" | grep -oE "phase[0-9]+" | grep -oE "[0-9]+" | sort -n | tail -1)
             if [ -n "$EXISTING_PHASES" ]; then
               # If phases exist, we're continuing from the last phase
               PHASE_NUMBER=$((EXISTING_PHASES + 1))
@@ -76,13 +77,14 @@ jobs:
           echo "CLAUDE_PHASE_NUMBER=$PHASE_NUMBER" >> $GITHUB_ENV
           
           # Check for project branch pattern based on existing issue branches
-          PROJECT_NAME=$(git branch -a | grep -E "remotes/origin/project/.*/claude/issue-$ISSUE_NUMBER" | head -1 | sed -E 's|remotes/origin/project/([^/]+)/.*|\1|' | xargs)
+          # 新しいパターン: {project-name}-{issue-number}-phase{N}
+          PROJECT_NAME=$(git branch -a | grep -E "remotes/origin/[^/]+-$ISSUE_NUMBER-phase[0-9]+" | head -1 | sed -E "s|remotes/origin/([^-]+)-$ISSUE_NUMBER-phase[0-9]+|\1|" | xargs)
           
           if [ -n "$PROJECT_NAME" ]; then
-            PROJECT_BRANCH="project/$PROJECT_NAME"
+            PROJECT_BRANCH="$PROJECT_NAME"
             echo "Found project branch from existing phases: $PROJECT_BRANCH"
             git checkout -b "$PROJECT_BRANCH" "origin/$PROJECT_BRANCH" || git checkout "$PROJECT_BRANCH"
-            git pull origin "$PROJECT_BRANCH"
+            git pull origin "$PROJECT_BRANCH" || echo "No remote branch yet"
             echo "CLAUDE_PROJECT_BRANCH=$PROJECT_BRANCH" >> $GITHUB_ENV
             echo "CLAUDE_BASE_BRANCH=$PROJECT_BRANCH" >> $GITHUB_ENV
           else
@@ -227,9 +229,8 @@ jobs:
             
             1. **ブランチ構造**:
                - システム設定: `master`（CLAUDE.md、workflowsのみ）
-               - プロジェクトメイン: `project/{project-name}`
-               - 作業ブランチ（Phase別）: `project/{project-name}/claude/issue-{number}-phase{N}`
-               - 継続開発: `project/{project-name}/claude/issue-{number}-{task-type}-phase{N}`
+               - プロジェクトメイン: `{project-name}`
+               - 作業ブランチ（Phase別）: `{project-name}-{issue-number}-phase{N}`
             
             2. **ブランチ確認手順**:
                CLAUDE.mdのブランチ管理手順セクションを参照してください。
