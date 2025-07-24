@@ -1,0 +1,162 @@
+name: Auto Phase Progression
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - 'project/**'
+
+jobs:
+  check-and-progress:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Extract phase information
+      id: phase_info
+      run: |
+        # PRのヘッドブランチ名を取得
+        HEAD_BRANCH="${{ github.event.pull_request.head.ref }}"
+        BASE_BRANCH="${{ github.event.pull_request.base.ref }}"
+        echo "Head branch: $HEAD_BRANCH"
+        echo "Base branch: $BASE_BRANCH"
+        
+        # 新統一形式: project/{project-name}-{issue-number}-phase{N}
+        # プロジェクト名の抽出（ベースブランチから）
+        if [[ $BASE_BRANCH =~ ^project/(.+)$ ]]; then
+          PROJECT_NAME="${BASH_REMATCH[1]}"
+        else
+          echo "Not a project branch PR, skipping..."
+          echo "is_phase_branch=false" >> $GITHUB_OUTPUT
+          exit 0
+        fi
+        
+        # フェーズ情報の抽出（ヘッドブランチから）
+        if [[ $HEAD_BRANCH =~ ^project/${PROJECT_NAME}-([0-9]+)-phase([0-9]+)$ ]]; then
+          ISSUE_NUMBER="${BASH_REMATCH[1]}"
+          CURRENT_PHASE="${BASH_REMATCH[2]}"
+        elif [[ $HEAD_BRANCH =~ ^${PROJECT_NAME}-([0-9]+)-phase([0-9]+)$ ]]; then
+          # 旧形式のサポート
+          ISSUE_NUMBER="${BASH_REMATCH[1]}"
+          CURRENT_PHASE="${BASH_REMATCH[2]}"
+        else
+          echo "Not a phase branch, skipping..."
+          echo "is_phase_branch=false" >> $GITHUB_OUTPUT
+          exit 0
+        fi
+        
+        NEXT_PHASE=$((CURRENT_PHASE + 1))
+        
+        echo "Project: $PROJECT_NAME"
+        echo "Issue: #$ISSUE_NUMBER"
+        echo "Current Phase: $CURRENT_PHASE"
+        echo "Next Phase: $NEXT_PHASE"
+        
+        # 環境変数として出力
+        echo "is_phase_branch=true" >> $GITHUB_OUTPUT
+        echo "project_name=$PROJECT_NAME" >> $GITHUB_OUTPUT
+        echo "issue_number=$ISSUE_NUMBER" >> $GITHUB_OUTPUT
+        echo "current_phase=$CURRENT_PHASE" >> $GITHUB_OUTPUT
+        echo "next_phase=$NEXT_PHASE" >> $GITHUB_OUTPUT
+
+    - name: Check for Final Status in PR description
+      if: steps.phase_info.outputs.is_phase_branch == 'true'
+      id: final_check
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const issueNumber = ${{ steps.phase_info.outputs.issue_number }};
+          
+          // 最新のコメントを取得してFinal Statusを確認
+          const comments = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: issueNumber,
+            per_page: 100
+          });
+          
+          // Claude botのコメントを逆順で確認（最新から）
+          const claudeComments = comments.data
+            .filter(c => c.user.login === 'claude[bot]')
+            .reverse();
+          
+          // Final Status:セクションがあるかチェック
+          const hasFinalStatus = claudeComments.some(comment => 
+            /####\s*Final\s*Status:/i.test(comment.body)
+          );
+          
+          console.log(`Final Status found: ${hasFinalStatus}`);
+          return hasFinalStatus;
+
+    - name: Post phase progression comment
+      if: steps.phase_info.outputs.is_phase_branch == 'true' && steps.final_check.outputs.result != 'true'
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const issueNumber = ${{ steps.phase_info.outputs.issue_number }};
+          const nextPhase = ${{ steps.phase_info.outputs.next_phase }};
+          const currentPhase = ${{ steps.phase_info.outputs.current_phase }};
+          const projectName = '${{ steps.phase_info.outputs.project_name }}';
+          
+          // Phase進行コメントを投稿
+          const comment = `@claude Phase ${nextPhase}を開始してください
+
+前フェーズのPR #${{ github.event.pull_request.number }} がマージされました。`;
+          
+          await github.rest.issues.createComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: issueNumber,
+            body: comment
+          });
+          
+          console.log(`Posted phase progression comment to issue #${issueNumber}`);
+
+    - name: Post completion notification
+      if: steps.phase_info.outputs.is_phase_branch == 'true' && steps.final_check.outputs.result == 'true'
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const issueNumber = ${{ steps.phase_info.outputs.issue_number }};
+          const projectName = '${{ steps.phase_info.outputs.project_name }}';
+          
+          console.log(`Project ${projectName} (Issue #${issueNumber}) has been completed with Final Status marker.`);
+
+    - name: Notify n8n webhook
+      if: steps.phase_info.outputs.is_phase_branch == 'true'
+      run: |
+        # n8nのWebhookを呼び出してSlack通知（オプション）
+        WEBHOOK_URL="https://n8n.oppy-ai.com/webhook/github-phase-progression"
+        
+        # Final Statusの有無を判定
+        IS_FINAL="${{ steps.final_check.outputs.result }}"
+        
+        # JSONペイロードを作成
+        PAYLOAD=$(cat <<EOF
+        {
+          "event_type": "phase_progression",
+          "project_name": "${{ steps.phase_info.outputs.project_name }}",
+          "issue_number": "${{ steps.phase_info.outputs.issue_number }}",
+          "current_phase": "${{ steps.phase_info.outputs.current_phase }}",
+          "next_phase": "${{ steps.phase_info.outputs.next_phase }}",
+          "pr_number": "${{ github.event.pull_request.number }}",
+          "pr_title": "${{ github.event.pull_request.title }}",
+          "is_final_status": "$IS_FINAL",
+          "proceed_to_next": "$([[ "$IS_FINAL" == "true" ]] && echo "false" || echo "true")"
+        }
+        EOF
+        )
+        
+        # Webhookを送信（失敗しても続行）
+        curl -X POST \
+          -H "Content-Type: application/json" \
+          -d "$PAYLOAD" \
+          "$WEBHOOK_URL" || echo "Warning: n8n webhook notification failed"

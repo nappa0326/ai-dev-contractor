@@ -13,9 +13,9 @@
 #### Issue別ブランチマッピング
 <!-- 
 例：
-- Issue #46: meishi-generator-46-phase1
-- Issue #47: pdf-compressor-47-phase1
-- Issue #48: pdf-compressor-48-phase1
+- Issue #46: project/meishi-generator-46-phase1
+- Issue #47: project/pdf-compressor-47-phase1
+- Issue #48: project/pdf-compressor-48-phase1
 -->
 
 ### ブランチ管理手順（フェーズ別）
@@ -26,10 +26,10 @@ git checkout project/{project-name}
 git pull origin project/{project-name}
 
 # 2. フェーズ別作業ブランチを作成
-# Phase 1: git checkout -b {project-name}-{issue-number}-phase1
-# Phase 2: git checkout -b {project-name}-{issue-number}-phase2
-# Phase 3: git checkout -b {project-name}-{issue-number}-phase3  
-# Phase 4: git checkout -b {project-name}-{issue-number}-phase4
+# Phase 1: git checkout -b project/{project-name}-{issue-number}-phase1
+# Phase 2: git checkout -b project/{project-name}-{issue-number}-phase2
+# Phase 3: git checkout -b project/{project-name}-{issue-number}-phase3  
+# Phase 4: git checkout -b project/{project-name}-{issue-number}-phase4
 
 # 3. 前フェーズの成果物を確認（Phase 2以降）
 git log --oneline -10  # マージ済みコミットを確認
@@ -41,8 +41,8 @@ ls -la  # ファイル構造を確認
 
 ### ブランチ構造
 - `master`: システム設定・ワークフローのみ（プロジェクトコードは含まない）
-- `{project-name}`: 案件専用メインブランチ（永続的）
-- `{project-name}-{issue-number}-phase{N}`: フェーズ別作業ブランチ（N=1-4）
+- `project/{project-name}`: 案件専用メインブランチ（永続的）
+- `project/{project-name}-{issue-number}-phase{N}`: フェーズ別作業ブランチ（N=1-4）
 
 ### 新規プロジェクト開発フロー
 
@@ -50,7 +50,7 @@ ls -la  # ファイル構造を確認
 ```bash
 # 1. プロジェクトメインブランチを作成
 git checkout master
-git checkout -b {project-name}
+git checkout -b project/{project-name}
 
 # 2. プロジェクトディレクトリを作成
 mkdir {project-name}
@@ -70,16 +70,16 @@ EOF
 # 4. 初期コミットとプッシュ
 git add .
 git commit -m "chore: Initialize {project-name} branch"
-git push -u origin {project-name}
+git push -u origin project/{project-name}
 
 # 5. Phase 1作業ブランチを作成
-git checkout -b {project-name}-{issue-number}-phase1
+git checkout -b project/{project-name}-{issue-number}-phase1
 ```
 
 #### 各フェーズ完了時のPR作成
 ```bash
 # Phase 1完了時
-gh pr create --base {project-name} \
+gh pr create --base project/{project-name} \
              --title "Phase 1: {プロジェクト名}設計書 (#{number})" \
              --body "## Phase 1: 設計フェーズ\n\n### 作成ドキュメント\n- ARCHITECTURE.md\n- REQUIREMENTS.md\n\nRelated to #{number}"
 
@@ -91,11 +91,11 @@ gh pr create --base {project-name} \
 #### 機能追加・バグ修正の開始
 ```bash
 # 1. プロジェクトメインブランチを最新化
-git checkout {project-name}
-git pull origin {project-name}
+git checkout project/{project-name}
+git pull origin project/{project-name}
 
 # 2. 新しい作業ブランチを作成
-git checkout -b {project-name}-{issue-number}-phase1
+git checkout -b project/{project-name}-{issue-number}-phase1
 
 # 3. 既存コードを理解
 cat .project.yml  # プロジェクト情報確認
@@ -148,7 +148,7 @@ echo "# {プロジェクト名}" > README.md
    - **プロジェクト専用ディレクトリを作成**
    - 技術選定の理由を明記
    - ディレクトリ構造の提案
-   - ブランチ名: `{project-name}-{issue-number}-phase1`を作成
+   - ブランチ名: `project/{project-name}-{issue-number}-phase1`を作成
    - PR作成: 設計書レビュー用のPRを作成
    - **報告に必ずブランチ名を含める**
    - `@claude-review-needed`タグを必ず含める
@@ -159,7 +159,7 @@ echo "# {プロジェクト名}" > README.md
    - 既存ファイルがあれば読み込んで理解
    - コア機能のみ実装
    - PR作成: MVP実装レビュー用のPRを作成
-   - **報告例**: "Phase 2完了 | PR: #102 | Branch: pdf-compressor-24-phase2"
+   - **報告例**: "Phase 2完了 | PR: #102 | Branch: project/pdf-compressor-24-phase2"
    - `@claude-review-needed`タグを必ず含める
 
 3. **Phase 3 (80%)**: 完全実装
@@ -296,13 +296,13 @@ gh pr create --base project/{project-name} \
 project/{project-name}
 
 # 継続開発用ブランチ（タスクタイプでもフェーズ別に作成）
-{project-name}-{新Issue番号}-phase{フェーズ番号}
+project/{project-name}-{新Issue番号}-phase{フェーズ番号}
 ```
 
 例：
-- `pdf-compressor-67-phase1`
-- `pdf-compressor-68-phase1`
-- `pdf-compressor-69-phase2`
+- `project/pdf-compressor-67-phase1`
+- `project/pdf-compressor-68-phase1`
+- `project/pdf-compressor-69-phase2`
 
 ### タスクタイプ別フェーズ構成
 
@@ -338,7 +338,7 @@ project/{project-name}
    # プロジェクトメインブランチから分岐
    git checkout project/{project-name}
    git pull origin project/{project-name}
-   git checkout -b {project-name}-{新番号}-phase1
+   git checkout -b project/{project-name}-{新番号}-phase1
    ```
 
 3. **既存コードの理解**
