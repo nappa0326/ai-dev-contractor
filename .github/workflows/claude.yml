@@ -57,12 +57,22 @@ jobs:
           # Check for existing branch related to this issue
           ISSUE_NUMBER="${{ github.event.issue.number }}"
           
-          # Detect current phase from issue comments
+          # Detect current phase from issue comments or determine from context
           PHASE_NUMBER=1
+          
+          # Check if this is a manual phase trigger (e.g., "@claude Phase 2を開始してください")
           if [[ "${{ github.event.comment.body }}" =~ Phase[[:space:]]([0-9]) ]]; then
             DETECTED_PHASE=${BASH_REMATCH[1]}
-            PHASE_NUMBER=$((DETECTED_PHASE + 1))
+            PHASE_NUMBER=$DETECTED_PHASE
+          else
+            # Detect phase from existing branches
+            EXISTING_PHASES=$(git branch -a | grep -E "remotes/origin/project/.*/claude/issue-$ISSUE_NUMBER-phase[0-9]+" | grep -oE "phase[0-9]+" | grep -oE "[0-9]+" | sort -n | tail -1)
+            if [ -n "$EXISTING_PHASES" ]; then
+              # If phases exist, we're continuing from the last phase
+              PHASE_NUMBER=$((EXISTING_PHASES + 1))
+            fi
           fi
+          
           echo "CLAUDE_PHASE_NUMBER=$PHASE_NUMBER" >> $GITHUB_ENV
           
           # Check for project branch pattern

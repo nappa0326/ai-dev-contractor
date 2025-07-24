@@ -1,0 +1,18 @@
+name: PR Merge Webhook
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  notify-n8n:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Send webhook to n8n
+        run: |
+          curl -X POST \
+            -H "Content-Type: application/json" \
+            -d '${{ toJson(github.event) }}' \
+            https://n8n.oppy-ai.com/webhook/github-pr-merged
