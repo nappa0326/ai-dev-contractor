@@ -80,7 +80,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={ \"body\": \"@claude Phase {{ $json.next_phase }}を開始してください\\n\\n前フェーズのPR #{{ $json.pr_number }} がマージされました。\" }",
+        "jsonBody": "={ \"body\": \"@claude Phase {{ $json.next_phase }}を開始してください\\n\\n前フェーズのPR #{{ $json.pr_number }} がマージされました。\\n\\n**重要**: \\n- ベースブランチ: `project/{{ $json.project_name }}`\\n- 新しい作業ブランチ: `project/{{ $json.project_name }}-{{ $json.issue_number }}-phase{{ $json.next_phase }}`\\n- 必ずベースブランチから作成してください\" }",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -177,7 +177,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "1227f0f2-151a-4e44-8239-1bcc2c0d5fa0",
+  "versionId": "5e2da183-ab6d-459a-a09e-aa00e6d2db05",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "b9ad821e1bac462e0829b0fcfa0ee54572f5b3a4dad3925c8cb3c5dae1bcef22"

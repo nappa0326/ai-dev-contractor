@@ -108,7 +108,12 @@ jobs:
           // Phase進行コメントを投稿
           const comment = `@claude Phase ${nextPhase}を開始してください
 
-前フェーズのPR #${{ github.event.pull_request.number }} がマージされました。`;
+前フェーズのPR #${{ github.event.pull_request.number }} がマージされました。
+
+**重要**: 
+- ベースブランチ: \`project/${projectName}\`
+- 新しい作業ブランチ: \`project/${projectName}-${issueNumber}-phase${nextPhase}\`
+- 必ずベースブランチから作成してください`;
           
           await github.rest.issues.createComment({
             owner: context.repo.owner,
