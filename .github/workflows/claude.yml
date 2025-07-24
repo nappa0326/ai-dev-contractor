@@ -57,17 +57,26 @@ jobs:
           # Check for existing branch related to this issue
           ISSUE_NUMBER="${{ github.event.issue.number }}"
           
+          # Detect current phase from issue comments
+          PHASE_NUMBER=1
+          if [[ "${{ github.event.comment.body }}" =~ Phase[[:space:]]([0-9]) ]]; then
+            DETECTED_PHASE=${BASH_REMATCH[1]}
+            PHASE_NUMBER=$((DETECTED_PHASE + 1))
+          fi
+          echo "CLAUDE_PHASE_NUMBER=$PHASE_NUMBER" >> $GITHUB_ENV
+          
           # Check for project branch pattern
-          PROJECT_BRANCH=$(git branch -a | grep -E "remotes/origin/project/.*[-/]claude[-/]issue-${ISSUE_NUMBER}" | head -1 | sed 's/remotes\/origin\///' | xargs)
+          PROJECT_BRANCH=$(git branch -a | grep -E "remotes/origin/project/[^/]+$" | grep -v claude | head -1 | sed 's/remotes\/origin\///' | xargs)
           
           if [ -n "$PROJECT_BRANCH" ]; then
             echo "Found project branch: $PROJECT_BRANCH"
             git checkout -b "$PROJECT_BRANCH" "origin/$PROJECT_BRANCH" || git checkout "$PROJECT_BRANCH"
-            echo "CLAUDE_EXISTING_BRANCH=$PROJECT_BRANCH" >> $GITHUB_ENV
+            git pull origin "$PROJECT_BRANCH"
+            echo "CLAUDE_PROJECT_BRANCH=$PROJECT_BRANCH" >> $GITHUB_ENV
             echo "CLAUDE_BASE_BRANCH=$PROJECT_BRANCH" >> $GITHUB_ENV
           else
-            echo "No existing branch found for issue $ISSUE_NUMBER"
-            echo "CLAUDE_EXISTING_BRANCH=" >> $GITHUB_ENV
+            echo "No project branch found for issue $ISSUE_NUMBER"
+            echo "CLAUDE_PROJECT_BRANCH=" >> $GITHUB_ENV
             echo "CLAUDE_BASE_BRANCH=${{ github.event.repository.default_branch }}" >> $GITHUB_ENV
           fi
 
@@ -137,12 +146,14 @@ jobs:
                - Create project main branch: git checkout -b project/{project-name}
                - Create project directory and .project.yml
                - Push project branch: git push -u origin project/{project-name}
-               - Create working branch: git checkout -b project/{project-name}/claude/issue-${{ github.event.issue.number }}-initial
+               - Create working branch: git checkout -b project/{project-name}/claude/issue-${{ github.event.issue.number }}-phase1
             
             4. Decision logic for CONTINUING WORK:
-               - For Phase 2+ of same issue → Use existing branch (NEVER create new)
-                 - git checkout {existing-branch}
-                 - git pull origin {existing-branch}
+               - For Phase 2+ of same issue → Create new phase branch
+                 - Determine current phase number from previous comments
+                 - git checkout project/{project-name}
+                 - git pull origin project/{project-name}
+                 - git checkout -b project/{project-name}/claude/issue-${{ github.event.issue.number }}-phase{N}
                - For continuation development tasks:
                  - Extract task type from tags: fix, bugfix, enhance, refactor, update, security, docs, test, perf
                  - Extract project name:
@@ -154,11 +165,11 @@ jobs:
                      4. Extract project name from found branch
                  - git checkout project/{project-name}
                  - git pull origin project/{project-name}
-                 - git checkout -b project/{project-name}/claude/issue-${{ github.event.issue.number }}-{task-type}
+                 - git checkout -b project/{project-name}/claude/issue-${{ github.event.issue.number }}-{task-type}-phase1
                  - Examples:
-                   * [bugfix: #44] → branch: project/{name}/claude/issue-XX-bugfix
-                   * [enhance: #44] → branch: project/{name}/claude/issue-XX-enhance
-                   * [refactor: #44] → branch: project/{name}/claude/issue-XX-refactor
+                   * [bugfix: #44] → branch: project/{name}/claude/issue-XX-bugfix-phase1
+                   * [enhance: #44] → branch: project/{name}/claude/issue-XX-enhance-phase1
+                   * [refactor: #44] → branch: project/{name}/claude/issue-XX-refactor-phase1
             
             5. For Phase 1 ONLY - MANDATORY PROJECT DIRECTORY:
                - Create project-specific directory with kebab-case naming
@@ -168,6 +179,7 @@ jobs:
                - DO NOT implement any code in Phase 1
             
             6. For continuing work (Phase 2+):
+               - Ensure previous phase PR is merged
                - Run: git log --oneline -10
                - Read ALL files from previous phases
                - Build upon existing implementation
@@ -179,10 +191,12 @@ jobs:
                - Run tests: npm test, pytest, etc.
                - Fix any issues before proceeding
             
-            9. CRITICAL - Commit and push at the end of EVERY phase:
+            9. CRITICAL - Commit, push and create PR at the end of EVERY phase:
                - Follow the git operations in CLAUDE.md "各フェーズ完了時の必須作業" section
-               - NEVER complete a phase without pushing to remote
-               - After push, add comment with @claude-review-needed
+               - Commit and push to remote
+               - Create PR using gh pr create command
+               - Report PR URL in your response
+               - Add comment with @claude-review-needed including PR link
                - STOP execution and wait for user response
           
           # Custom instructions for phased development
@@ -203,8 +217,8 @@ jobs:
             1. **ブランチ構造**:
                - システム設定: `master`（CLAUDE.md、workflowsのみ）
                - プロジェクトメイン: `project/{project-name}`
-               - 作業ブランチ（初期）: `project/{project-name}/claude/issue-{number}-initial`
-               - 作業ブランチ（継続）: `project/{project-name}/claude/issue-{number}-{feature}`
+               - 作業ブランチ（Phase別）: `project/{project-name}/claude/issue-{number}-phase{N}`
+               - 継続開発: `project/{project-name}/claude/issue-{number}-{task-type}-phase{N}`
             
             2. **ブランチ確認手順**:
                CLAUDE.mdのブランチ管理手順セクションを参照してください。
@@ -213,9 +227,9 @@ jobs:
                
                **新規プロジェクト（4フェーズ）**:
                - Phase 1 (20%): 設計書を作成し、ユーザーレビューを待つ
-               - Phase 2 (50%): **同一ブランチで**MVPを実装
-               - Phase 3 (80%): **同一ブランチで**完全実装
-               - Phase 4 (100%): **同一ブランチで**品質向上・ドキュメント整備
+               - Phase 2 (50%): **新しいブランチで**MVPを実装（Phase 1 PRマージ後）
+               - Phase 3 (80%): **新しいブランチで**完全実装（Phase 2 PRマージ後）
+               - Phase 4 (100%): **新しいブランチで**品質向上・ドキュメント整備（Phase 3 PRマージ後）
                
                **継続開発タスク（タスクタイプ別フェーズ構成）**:
                - fix（軽微な修正）: 1フェーズ（100%で完了）
@@ -236,12 +250,12 @@ jobs:
             - ドキュメントが整備済み
             - コードレビュー準備完了
             
-            **プロジェクト完了時、プロジェクトブランチへPRを作成**：
+            **各フェーズ完了時、プロジェクトブランチへPRを作成**：
             ```bash
-            # プロジェクトブランチへPRを作成
+            # 各フェーズでPRを作成
             gh pr create --base project/{project-name} \
-                         --title "feat: Issue #${{ github.event.issue.number }} - [機能説明]" \
-                         --body "## 実装内容\n[実装内容の要約]\n\nCloses #${{ github.event.issue.number }}"
+                         --title "Phase {N}: {プロジェクト名}{フェーズ説明} (#${{ github.event.issue.number }})" \
+                         --body "## Phase {N}完了\n\n[成果物の説明]\n\nRelated to #${{ github.event.issue.number }}"
             ```
             
             注意：
@@ -252,28 +266,29 @@ jobs:
             ## 🚨 各フェーズ完了時の必須作業
             **CLAUDE.mdの「各フェーズ完了時の必須作業」セクションを参照してください。**
             
-            **重要**: プッシュを忘れると、次回の実行時に既存ブランチが見つからず、
-            新しいブランチが作成されてしまい、フェーズ間の連続性が失われます。
+            **重要**: 各フェーズでPR作成が必須です。PRを作成しないと、
+            段階的なレビューができず、品質保証が困難になります。
             
             4. **各フェーズでの作業**:
-               - 前のフェーズのコードを必ず読み込む
+               - プロジェクトメインブランチを最新化
+               - 前フェーズのPRがマージされていることを確認
+               - 前のフェーズの成果物を必ず読み込む
                - 既存の実装の上に追加実装を行う
-               - 既存ファイルを削除・置換せず、改善・拡張する
-               - git logで前のコミットを確認する
+               - git logでマージ済みコミットを確認する
             
             5. **レビューポイント**:
                - 各フェーズ完了時に`@claude-review-needed`タグを追加
                - 必ず現在のブランチ名を報告に含める
-               - 例: "Phase 2完了 (branch: project/pdf-compressor/claude/issue-24-initial) @claude-review-needed"
+               - 例: "Phase 2完了 | PR: #102 | Branch: project/pdf-compressor/claude/issue-24-phase2 @claude-review-needed"
             
             6. **プロジェクト完了判定**:
-               - すべてのフェーズが完了してもプロジェクトは自動完了しない
-               - 品質基準を満たし、デプロイ可能な状態になったら完了
-               - 完了時はgh pr createコマンドでPRを作成
+               - Phase 4のPRがマージされたらプロジェクト完了
+               - 品質基準を満たし、デプロイ可能な状態を確認
+               - 全フェーズのPRがマージ済みであることを報告
             
             7. **禁止事項**:
-               - 新しいフェーズで新しいブランチを作成すること
-               - 前のフェーズの実装を無視すること
+               - PRを作成せずに次のフェーズに進むこと
+               - 前のフェーズの成果物を無視すること
                - ゼロから再実装すること
             
             8. **エラー時の対処**:

@@ -333,7 +333,7 @@
     },
     {
       "parameters": {
-        "jsCode": "    // 最新のコメントからブランチ情報を抽出\n    const comments = $input.all();\n    let branchName = null;\n    let projectName = null;\n    let latestPhase = null;\n\n    // コメントを逆順（最新から）検索\n    for (let i = comments.length - 1; i >= 0; i--) {\n      const comment = comments[i].json.body || '';\n\n    // ブランチ名を探す（Branch: または **Branch**: または • Branch: またはブランチ: の形式に対応）\n    const branchMatch = comment.match(/(?:^|\\s|•\\s*)(?:\\*\\*)?(?:Branch|ブランチ)(?:\\*\\*)?:\\s*`?([\\/\\w-]+)`?/i);\n      if (branchMatch && !branchName) {\n        branchName = branchMatch[1];\n\n        // プロジェクト名を抽出\n        const projectMatch = branchName.match(/^project\\/([^\\/]+)(?:\\/|-)?claude\\/issue-\\d+/);\n        if (projectMatch) {\n          projectName = projectMatch[1];\n        }\n  }\n\n      // Phase番号を探す\n      const phaseMatch = comment.match(/Phase\\s+(\\d)/i);\n      if (phaseMatch && !latestPhase) {\n        latestPhase = phaseMatch[1];\n      }\n\n      // 両方見つかったら終了\n      if (branchName && latestPhase) break;\n    }\n\n    // Codeノードからのデータを取得（正しい構文）\n    const originalData = $(\"Code\").first().json;\n\n    return {\n      ...originalData,\n      extractedBranch: branchName,\n      projectName: projectName || 'N/A',\n      latestPhase: latestPhase,\n      nextPhase: latestPhase ? parseInt(latestPhase) + 1 : 1\n    };"
+        "jsCode": "  // 最新のコメントからブランチ情報とPR情報を抽出\n  const comments = $input.all();\n  let branchName = null;\n  let projectName = null;\n  let latestPhase = null;\n  let prNumber = null;\n  let prUrl = null;\n\n  // コメントを逆順（最新から）検索\n  for (let i = comments.length - 1; i >= 0; i--) {\n    const comment = comments[i].json.body || '';\n\n    // ブランチ名を探す（Branch: または **Branch**: または • Branch: またはブランチ: の形式に対応）\n    const branchMatch =\n  comment.match(/(?:^|\\s|•\\s*)(?:\\*\\*)?(?:Branch|ブランチ)(?:\\*\\*)?:\\s*`?([\\/\\w-]+)`?/i);\n    if (branchMatch && !branchName) {\n      branchName = branchMatch[1];\n\n      // プロジェクト名を抽出\n      const projectMatch = branchName.match(/^project\\/([^\\/]+)(?:\\/|-)?claude\\/issue-\\d+/);\n      if (projectMatch) {\n        projectName = projectMatch[1];\n      }\n    }\n\n    // Phase番号を探す\n    const phaseMatch = comment.match(/Phase\\s+(\\d)/i);\n    if (phaseMatch && !latestPhase) {\n      latestPhase = phaseMatch[1];\n    }\n\n    // PR番号を探す（新規追加）\n    const prMatch = comment.match(/PR:\\s*#(\\d+)/);\n    if (prMatch && !prNumber) {\n      prNumber = prMatch[1];\n      // PR URLの生成\n      const repoUrl = 'https://github.com/nappa0326/ai-development-company';\n      prUrl = `${repoUrl}/pull/${prNumber}`;\n    }\n\n    // すべて見つかったら終了\n    if (branchName && latestPhase && prNumber) break;\n  }\n\n  // Codeノードからのデータを取得（正しい構文）\n  const originalData = $(\"Code\").first().json;\n\n  return {\n    ...originalData,\n    extractedBranch: branchName,\n    projectName: projectName || 'N/A',\n    latestPhase: latestPhase,\n    nextPhase: latestPhase ? parseInt(latestPhase) + 1 : 1,\n    prNumber: prNumber,\n    prUrl: prUrl,\n    hasPR: prNumber !== null\n  };"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -456,7 +456,7 @@
     "callerPolicy": "workflowsFromSameOwner",
     "errorWorkflow": "V00wqOQfw5vs8CVQ"
   },
-  "versionId": "2dc4176b-b4d2-45b3-ac35-a8a477d95a6b",
+  "versionId": "ad8b58ce-99a3-4fd5-b8ff-4397daf61276",
   "meta": {
     "instanceId": "b9ad821e1bac462e0829b0fcfa0ee54572f5b3a4dad3925c8cb3c5dae1bcef22"
   },

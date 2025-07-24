@@ -1,9 +1,9 @@
 # CLAUDE.md - 開発請負AI ガイドライン
 
-## 🚨 最重要：ブランチ管理による連続性の保証
+## 🚨 最重要：フェーズ別ブランチ戦略
 
 ### 絶対的ルール
-**各Issue/PRに対して単一のブランチのみを使用し、フェーズ間の連続性を必ず保証すること**
+**各フェーズで独立したブランチとPull Requestを作成し、段階的なレビューと品質保証を実現すること**
 
 ### 開発フェーズ記録
 
@@ -18,24 +18,23 @@
 - Issue #48: project/pdf-compressor/claude/issue-48-drag-drop
 -->
 
-### ブランチ管理手順（毎回必ず実行）
+### ブランチ管理手順（フェーズ別）
 
 ```bash
-# 1. 作業開始時、必ず既存ブランチを確認
-git fetch --all
-git branch -a | grep -E "project/.*/claude/issue-{現在のissue番号}"
+# 1. 各フェーズ開始時、プロジェクトメインブランチを最新化
+git checkout project/{project-name}
+git pull origin project/{project-name}
 
-# 2. Phase 1の場合（新規プロジェクト）
-# → プロジェクトブランチ戦略のセクションを参照
+# 2. フェーズ別作業ブランチを作成
+# Phase 1: git checkout -b project/{project-name}/claude/issue-{number}-phase1
+# Phase 2: git checkout -b project/{project-name}/claude/issue-{number}-phase2
+# Phase 3: git checkout -b project/{project-name}/claude/issue-{number}-phase3
+# Phase 4: git checkout -b project/{project-name}/claude/issue-{number}-phase4
 
-# 3. Phase 2以降の場合（継続開発）
-git checkout {既存作業ブランチ名}
-git pull origin {既存作業ブランチ名}
-
-# 4. 前のフェーズの実装を確認
-git log --oneline -10  # コミット履歴を確認
+# 3. 前フェーズの成果物を確認（Phase 2以降）
+git log --oneline -10  # マージ済みコミットを確認
 ls -la  # ファイル構造を確認
-# 主要ファイルの内容を読み込んで理解する
+# 設計書・既存実装を読み込んで理解する
 ```
 
 ## プロジェクトブランチ戦略
@@ -43,8 +42,11 @@ ls -la  # ファイル構造を確認
 ### ブランチ構造
 - `master`: システム設定・ワークフローのみ（プロジェクトコードは含まない）
 - `project/{project-name}`: 案件専用メインブランチ（永続的）
-- `project/{project-name}/claude/issue-{number}-initial`: 初期開発の作業ブランチ
-- `project/{project-name}/claude/issue-{number}-{feature}`: 継続開発の作業ブランチ
+- `project/{project-name}/claude/issue-{number}-phase1`: Phase 1作業ブランチ
+- `project/{project-name}/claude/issue-{number}-phase2`: Phase 2作業ブランチ
+- `project/{project-name}/claude/issue-{number}-phase3`: Phase 3作業ブランチ
+- `project/{project-name}/claude/issue-{number}-phase4`: Phase 4作業ブランチ
+- `project/{project-name}/claude/issue-{number}-{task-type}`: 継続開発の作業ブランチ
 
 ### 新規プロジェクト開発フロー
 
@@ -74,16 +76,18 @@ git add .
 git commit -m "chore: Initialize project/{project-name} branch"
 git push -u origin project/{project-name}
 
-# 5. 作業ブランチを作成
-git checkout -b project/{project-name}/claude/issue-{number}-initial
+# 5. Phase 1作業ブランチを作成
+git checkout -b project/{project-name}/claude/issue-{number}-phase1
 ```
 
-#### 開発完了時（Phase 4後）
+#### 各フェーズ完了時のPR作成
 ```bash
-# プロジェクトメインブランチへPR作成
+# Phase 1完了時
 gh pr create --base project/{project-name} \
-             --title "feat: Issue #{number} - [機能説明]" \
-             --body "## 実装内容\n[実装内容の要約]\n\nCloses #{number}"
+             --title "Phase 1: {プロジェクト名}設計書 (#{number})" \
+             --body "## Phase 1: 設計フェーズ\n\n### 作成ドキュメント\n- ARCHITECTURE.md\n- REQUIREMENTS.md\n\nRelated to #{number}"
+
+# Phase 2-4も同様にPR作成（タイトルとフェーズ番号を変更）
 ```
 
 ### 継続開発フロー
@@ -148,41 +152,45 @@ echo "# {プロジェクト名}" > README.md
    - **プロジェクト専用ディレクトリを作成**
    - 技術選定の理由を明記
    - ディレクトリ構造の提案
-   - ブランチ名: `project/{project-name}/claude/issue-{番号}-initial`を作成
+   - ブランチ名: `project/{project-name}/claude/issue-{番号}-phase1`を作成
+   - PR作成: 設計書レビュー用のPRを作成
    - **報告に必ずブランチ名を含める**
    - `@claude-review-needed`タグを必ず含める
 
 2. **Phase 2 (50%)**: MVP（最小限の動作可能な実装）を作成
-   - **Phase 1と同じブランチを使用**
+   - **新しいPhase 2ブランチを作成**（Phase 1がマージ済みの前提）
    - Phase 1の設計に基づいて実装
    - 既存ファイルがあれば読み込んで理解
    - コア機能のみ実装
-   - **報告例**: "Phase 2完了 (branch: project/pdf-compressor/claude/issue-24-initial)"
+   - PR作成: MVP実装レビュー用のPRを作成
+   - **報告例**: "Phase 2完了 | PR: #102 | Branch: project/pdf-compressor/claude/issue-24-phase2"
    - `@claude-review-needed`タグを必ず含める
 
 3. **Phase 3 (80%)**: 完全実装
-   - **Phase 1,2と同じブランチを使用**
+   - **新しいPhase 3ブランチを作成**（Phase 1,2がマージ済みの前提）
    - Phase 2のコードを拡張（削除・置換しない）
    - すべての要求機能を実装
    - エラーハンドリング、テスト追加
    - **前のフェーズのファイルを必ず読み込む**
+   - PR作成: 完全実装レビュー用のPRを作成
    - `@claude-review-needed`タグを必ず含める
 
 4. **Phase 4 (100%)**: 品質向上とドキュメント整備
-   - **Phase 1,2,3と同じブランチを使用**
+   - **新しいPhase 4ブランチを作成**（Phase 1,2,3がマージ済みの前提）
    - コード品質の最終確認
    - ドキュメントの完成
    - パフォーマンス最適化
+   - PR作成: 最終品質向上レビュー用のPRを作成
    - `@claude-review-needed`タグを必ず含める
 
-### 連続性保証のチェックリスト
+### フェーズ間連続性のチェックリスト
 
 各フェーズ開始時に必ず確認：
-- [ ] 既存ブランチの存在確認をしたか？
-- [ ] 前のフェーズのコミットを確認したか？
-- [ ] 前のフェーズのファイルを読み込んだか？
-- [ ] 既存実装の上に追加実装する計画か？
-- [ ] ブランチ名を報告に含めたか？
+- [ ] プロジェクトメインブランチを最新化したか？
+- [ ] 前フェーズのPRがマージされているか確認したか？
+- [ ] 前フェーズの成果物（設計書・実装）を読み込んだか？
+- [ ] 新しいフェーズブランチを作成したか？
+- [ ] PR URLを報告に含める準備はできているか？
 
 ### 🚨 各フェーズ完了時の必須作業
 
@@ -194,21 +202,27 @@ git add -A
 # 2. フェーズ完了をコミット
 git commit -m "feat: Phase X implementation for Issue #XX"
 
-# 3. リモートにプッシュ（これが最重要！）
+# 3. リモートにプッシュ
 git push origin {現在のブランチ名}
+
+# 4. PRを作成（最重要！）
+gh pr create --base project/{project-name} \
+             --title "Phase X: {説明} (#{issue-number})" \
+             --body "## Phase X完了\n\n[成果物の説明]\n\nRelated to #{issue-number}"
 ```
 
-**なぜプッシュが必須なのか**：
-- プッシュしないと、次回実行時に既存ブランチが見つからない
-- 結果として新しいブランチが作成され、連続性が失われる
-- 作業内容が失われ、フェーズの継続ができなくなる
+**なぜPR作成が必須なのか**：
+- 各フェーズの成果物を段階的にレビュー
+- 品質を確保しながら開発を進行
+- 進捗の透明性を確保
+- GitHub上で全体の開発履歴を追跡可能
 
 ### 禁止事項
 
-- ❌ フェーズごとに新しいブランチを作成すること
-- ❌ 前のフェーズの実装を無視すること
+- ❌ PR作成せずに次のフェーズに進むこと
+- ❌ 前のフェーズの成果物を無視すること
 - ❌ 既存ファイルを削除してゼロから作り直すこと
-- ❌ git履歴を確認せずに作業を開始すること
+- ❌ プロジェクトメインブランチを最新化せずに作業を開始すること
 
 ### エラー時の対処
 
@@ -225,15 +239,8 @@ git push origin {現在のブランチ名}
 - コードレビュー準備完了
 
 完了時は、以下を実行：
-1. すべての変更をコミット・プッシュ
-2. プルリクエストを作成：
-   ```bash
-   # プロジェクトブランチへのPR作成
-   gh pr create --base project/{project-name} \
-                --title "feat: Issue #XX - [機能説明]" \
-                --body "## 実装内容\n[実装内容の要約]\n\nCloses #XX"
-   ```
-3. Phase 4の通常報告の後、以下の形式でプロジェクト完了を報告：
+1. Phase 4のPRがマージされたことを確認
+2. Phase 4の通常報告の後、以下の形式でプロジェクト完了を報告：
    ```
    #### Final Status:
    🎉 **PROJECT COMPLETED** - [プロジェクト名] is production-ready
@@ -290,14 +297,14 @@ git push origin {現在のブランチ名}
 # 元のプロジェクトブランチ
 project/{project-name}
 
-# 継続開発用ブランチ
-project/{project-name}/claude/issue-{新Issue番号}-{タスクタイプ}
+# 継続開発用ブランチ（タスクタイプでもフェーズ別に作成）
+project/{project-name}/claude/issue-{新Issue番号}-{タスクタイプ}-phase{フェーズ番号}
 ```
 
 例：
-- `project/pdf-compressor/claude/issue-67-enhance`
-- `project/pdf-compressor/claude/issue-68-bugfix`
-- `project/pdf-compressor/claude/issue-69-refactor`
+- `project/pdf-compressor/claude/issue-67-enhance-phase1`
+- `project/pdf-compressor/claude/issue-68-bugfix-phase1`
+- `project/pdf-compressor/claude/issue-69-refactor-phase2`
 
 ### タスクタイプ別フェーズ構成
 
@@ -333,7 +340,7 @@ project/{project-name}/claude/issue-{新Issue番号}-{タスクタイプ}
    # プロジェクトメインブランチから分岐
    git checkout project/{project-name}
    git pull origin project/{project-name}
-   git checkout -b project/{project-name}/claude/issue-{新番号}-{タスクタイプ}
+   git checkout -b project/{project-name}/claude/issue-{新番号}-{タスクタイプ}-phase1
    ```
 
 3. **既存コードの理解**
@@ -345,11 +352,12 @@ project/{project-name}/claude/issue-{新Issue番号}-{タスクタイプ}
    - 各フェーズで適切な作業を実施
    - `@claude-review-needed`タグで承認を求める
 
-5. **完了時のPR作成**
+5. **各フェーズ完了時のPR作成**
    ```bash
+   # 各フェーズでPRを作成（新規プロジェクトと同様）
    gh pr create --base project/{project-name} \
-                --title "{タスクタイプ}: {説明}" \
-                --body "## 変更内容\n[詳細]\n\nRelated to #元Issue番号"
+                --title "{タスクタイプ} Phase {N}: {説明} (#{issue-number})" \
+                --body "## Phase {N}完了\n\n[変更内容]\n\nRelated to #元Issue番号"
    ```
 
 ### Issue作成時の必須事項
@@ -376,7 +384,7 @@ project/{project-name}/claude/issue-{新Issue番号}-{タスクタイプ}
 ```
 #### Final Status:
 🎉 **PROJECT COMPLETED** - [プロジェクト名] is production-ready
-**Pull Request Created**: [#PR番号](PRのURL)
+**All PRs Merged**: Phase 1-4の全PRがマージ完了
 ```
 
 **継続開発の各タスクタイプ最終フェーズ完了時**:
