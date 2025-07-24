@@ -75,11 +75,12 @@ jobs:
           
           echo "CLAUDE_PHASE_NUMBER=$PHASE_NUMBER" >> $GITHUB_ENV
           
-          # Check for project branch pattern
-          PROJECT_BRANCH=$(git branch -a | grep -E "remotes/origin/project/[^/]+$" | grep -v claude | head -1 | sed 's/remotes\/origin\///' | xargs)
+          # Check for project branch pattern based on existing issue branches
+          PROJECT_NAME=$(git branch -a | grep -E "remotes/origin/project/.*/claude/issue-$ISSUE_NUMBER" | head -1 | sed -E 's|remotes/origin/project/([^/]+)/.*|\1|' | xargs)
           
-          if [ -n "$PROJECT_BRANCH" ]; then
-            echo "Found project branch: $PROJECT_BRANCH"
+          if [ -n "$PROJECT_NAME" ]; then
+            PROJECT_BRANCH="project/$PROJECT_NAME"
+            echo "Found project branch from existing phases: $PROJECT_BRANCH"
             git checkout -b "$PROJECT_BRANCH" "origin/$PROJECT_BRANCH" || git checkout "$PROJECT_BRANCH"
             git pull origin "$PROJECT_BRANCH"
             echo "CLAUDE_PROJECT_BRANCH=$PROJECT_BRANCH" >> $GITHUB_ENV

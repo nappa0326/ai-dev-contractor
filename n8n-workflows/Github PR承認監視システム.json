@@ -19,7 +19,7 @@
     },
     {
       "parameters": {
-        "jsCode": "  // GitHub WebhookからPRマージイベントを解析\n  const event = $json.body;\n\n  // PRがクローズされた、かつマージされた場合のみ処理\n  if (event.action !== 'closed' || !event.pull_request?.merged) {\n    return {\n      json: {\n        skip: true,\n        reason: 'PR not merged'\n      }\n    };\n  }\n\n  // PR情報を取得\n  const pr = event.pull_request;\n  const prNumber = pr.number;\n  const prTitle = pr.title;\n  const baseBranch = pr.base.ref;\n  const headBranch = pr.head.ref;\n\n  // フェーズ別ブランチのパターンマッチ\n  // 例: project/simple-todo-cli/claude/issue-82-phase1\n  const phaseMatch = headBranch.match(/^project\\/([^\\/]+)\\/claude\\/issue-(\\d+)-phase(\\d+)$/);\n\n  if (!phaseMatch) {\n    return {\n      json: {\n        skip: true,\n        reason: 'Not a phase branch'\n      }\n    };\n  }\n\n  const projectName = phaseMatch[1];\n  const issueNumber = phaseMatch[2];\n  const currentPhase = parseInt(phaseMatch[3]);\n  const nextPhase = currentPhase + 1;\n\n  // Phase 4の場合は完了なので次フェーズなし\n  if (currentPhase >= 4) {\n    return {\n      json: {\n        skip: true,\n        reason: 'Already completed all phases'\n      }\n    };\n  }\n\n  return {\n    json: {\n      skip: false,\n      issue_number: issueNumber,\n      project_name: projectName,\n      current_phase: currentPhase,\n      next_phase: nextPhase,\n      pr_number: prNumber,\n      pr_title: prTitle,\n      base_branch: baseBranch,\n      head_branch: headBranch\n    }\n  };"
+        "jsCode": "      // GitHub WebhookからPRマージイベントを解析\n      const event = $json.body;\n\n      // PRがクローズされた、かつマージされた場合のみ処理\n      if (event.action !== 'closed' || !event.pull_request?.merged) {\n        return {\n          json: {\n            skip: true,\n            reason: 'PR not merged'\n          }\n        };\n      }\n\n      // PR情報を取得\n      const pr = event.pull_request;\n      const prNumber = pr.number;\n      const prTitle = pr.title;\n      const baseBranch = pr.base.ref;\n      const headBranch = pr.head.ref;\n\n      // フェーズ別ブランチのパターンマッチ（複数形式対応）\n      // 例1: project/simple-todo-cli/claude/issue-82-phase1\n      // 例2: numeric-calc-phase2\n      // 例3: numeric-calculator-phase3\n      let phaseMatch = headBranch.match(/^project\\/([^\\/]+)\\/claude\\/issue-(\\d+)-phase(\\d+)$/);\n      let projectName, issueNumber, currentPhase;\n\n      if (phaseMatch) {\n        // パターン1: project/xxx/claude/issue-YY-phaseN\n        projectName = phaseMatch[1];\n        issueNumber = phaseMatch[2];\n        currentPhase = parseInt(phaseMatch[3]);\n      } else {\n        // パターン2/3: xxx-phaseN\n        phaseMatch = headBranch.match(/^(.+)-phase(\\d+)$/);\n        if (!phaseMatch) {\n          return {\n            json: {\n              skip: true,\n              reason: 'Not a phase branch'\n            }\n          };\n        }\n\n        projectName = phaseMatch[1];\n        // PRタイトルから Issue番号を抽出: \"Phase 2: タイトル (#84)\"\n        const titleMatch = prTitle.match(/#(\\d+)/);\n        issueNumber = titleMatch ? titleMatch[1] : null;\n        currentPhase = parseInt(phaseMatch[2]);\n      }\n\n      if (!issueNumber) {\n        return {\n          json: {\n            skip: true,\n            reason: 'Could not determine issue number'\n          }\n        };\n      }\n\n      const nextPhase = currentPhase + 1;\n\n      // Phase 4の場合は完了なので次フェーズなし\n      if (currentPhase >= 4) {\n        return {\n          json: {\n            skip: true,\n            reason: 'Already completed all phases'\n          }\n        };\n      }\n\n      return {\n        json: {\n          skip: false,\n          issue_number: issueNumber,\n          project_name: projectName,\n          current_phase: currentPhase,\n          next_phase: nextPhase,\n          pr_number: prNumber,\n          pr_title: prTitle,\n          base_branch: baseBranch,\n          head_branch: headBranch\n        }\n      };"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -106,7 +106,7 @@
           "value": "C094LNGF8H5",
           "mode": "id"
         },
-        "text": "=🔄 Phase {{ $json.next_phase }}を自動開始しました\\nプロジェクト: {{ $json.project_name }}\\nIssue: #{{ $json.issue_number }}\\n前フェーズPR: #{{ $json.pr_number }} がマージされました",
+        "text": "=🔄 Phase {{ $('Code').item.next_phase }}を自動開始しました\n  プロジェクト: {{ $('Code').item.project_name }}\n  Issue: #{{ $('Code').item.issue_number }}\n  前フェーズPR: #{{ $('Code').item.pr_number }} がマージされました",
         "otherOptions": {}
       },
       "type": "n8n-nodes-base.slack",
@@ -173,11 +173,11 @@
       ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "89475794-84b3-41b6-888e-d77872524be0",
+  "versionId": "d251e091-a3ce-4215-839a-d0906ef0fb2c",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "b9ad821e1bac462e0829b0fcfa0ee54572f5b3a4dad3925c8cb3c5dae1bcef22"
