@@ -65,41 +65,6 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "= https://api.github.com/repos/nappa0326/ai-development-company/issues/{{ $json.issue_number }}/comments",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "githubApi",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Accept",
-              "value": "application/vnd.github.v3+json"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={ \"body\": \"@claude Phase {{ $json.next_phase }}を開始してください\\n\\n前フェーズのPR #{{ $json.pr_number }} がマージされました。\\n\\n**重要**: \\n- ベースブランチ: `project/{{ $json.project_name }}`\\n- 新しい作業ブランチ: `project/{{ $json.project_name }}-{{ $json.issue_number }}-phase{{ $json.next_phase }}`\\n- 必ずベースブランチから作成してください\" }",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        660,
-        0
-      ],
-      "id": "1c6a1003-aea1-4464-abc3-c23bd6ac87fe",
-      "name": "HTTP Request",
-      "credentials": {
-        "githubApi": {
-          "id": "pY9qy7slGFPBmR5S",
-          "name": "GitHub account"
-        }
-      }
-    },
-    {
-      "parameters": {
         "select": "channel",
         "channelId": {
           "__rl": true,
@@ -112,7 +77,7 @@
       "type": "n8n-nodes-base.slack",
       "typeVersion": 2.3,
       "position": [
-        880,
+        660,
         0
       ],
       "id": "4853d38b-4a84-4228-9194-c883e089c3e7",
@@ -154,17 +119,6 @@
       "main": [
         [
           {
-            "node": "HTTP Request",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "HTTP Request": {
-      "main": [
-        [
-          {
             "node": "Send a message",
             "type": "main",
             "index": 0
@@ -177,7 +131,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "48f40702-1e1c-4823-83c0-fb8bf5ade697",
+  "versionId": "6e96ba8f-edb0-4aab-af5e-2f955a17ba4c",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "b9ad821e1bac462e0829b0fcfa0ee54572f5b3a4dad3925c8cb3c5dae1bcef22"
