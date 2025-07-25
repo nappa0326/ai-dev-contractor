@@ -113,7 +113,7 @@ jobs:
       if: steps.phase_info.outputs.is_phase_branch == 'true' && steps.final_check.outputs.result != 'true'
       uses: actions/github-script@v7
       with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
+        github-token: ${{ secrets.PAT_WITH_REPO_SCOPE }}
         script: |
           const issueNumber = ${{ steps.phase_info.outputs.issue_number }};
           const nextPhase = ${{ steps.phase_info.outputs.next_phase }};
