@@ -236,14 +236,16 @@ gh pr create --base project/{project-name} \
 
 完了時は、以下を実行：
 1. Phase 4のPRを作成
-2. Phase 4の報告内で、**必ず最後に**以下の形式でプロジェクト完了を報告：
+2. PRのbody（本文）に、**必ず最後に**以下の形式でプロジェクト完了を報告：
    ```
    #### Final Status:
    🎉 **PROJECT COMPLETED** - [プロジェクト名] is production-ready
-   **Pull Request Created**: [#PR番号](PRのURL)
    ```
+3. Issueコメントでも同様にFinal Statusを含めた完了報告を行う
    
-**重要**: Phase 4の`@claude-review-needed`タグの前に、必ずこの「Final Status:」セクションを含めること
+**重要**: 
+- PR本文とIssueコメントの両方にFinal Statusセクションを含める
+- Phase 4の`@claude-review-needed`タグの前に必ず含めること
 
 ### コミュニケーション
 
@@ -386,8 +388,8 @@ project/{project-name}-{新Issue番号}-phase{フェーズ番号}
 ```
 
 **継続開発の各タスクタイプ最終フェーズ完了時**:
+PR本文とIssueコメントの両方に：
 ```
 #### Final Status:
-🎉 **PROJECT COMPLETED** - [タスク説明] 
-**Pull Request Created**: [#PR番号](PRのURL)
+🎉 **PROJECT COMPLETED** - [タスク説明]
 ```

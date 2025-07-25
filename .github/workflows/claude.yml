@@ -145,7 +145,7 @@ jobs:
             
             MANDATORY WORKFLOW:
             1. First, check current branch: git branch --show-current
-            2. Search for existing branches: git branch -a | grep -E "project/.*/claude/issue-${{ github.event.issue.number }}"
+            2. Search for existing branches: git branch -a | grep -E "project/.*-${{ github.event.issue.number }}"
             
             3. Decision logic for NEW PROJECTS (Phase 1):
                - Check if issue contains continuation tags:
@@ -159,14 +159,14 @@ jobs:
                - Create project main branch: git checkout -b project/{project-name}
                - Create project directory and .project.yml
                - Push project branch: git push -u origin project/{project-name}
-               - Create working branch: git checkout -b project/{project-name}/claude/issue-${{ github.event.issue.number }}-phase1
+               - Create working branch: git checkout -b project/{project-name}-${{ github.event.issue.number }}-phase1
             
             4. Decision logic for CONTINUING WORK:
                - For Phase 2+ of same issue → Create new phase branch
                  - Determine current phase number from previous comments
                  - git checkout project/{project-name}
                  - git pull origin project/{project-name}
-                 - git checkout -b project/{project-name}/claude/issue-${{ github.event.issue.number }}-phase{N}
+                 - git checkout -b project/{project-name}-${{ github.event.issue.number }}-phase{N}
                - For continuation development tasks:
                  - Extract task type from tags: fix, bugfix, enhance, refactor, update, security, docs, test, perf
                  - Extract project name:
@@ -174,15 +174,15 @@ jobs:
                    * Otherwise, from referenced issue ([bugfix: #XX] → look up issue #XX's project):
                      1. Use GitHub API to get issue #XX details
                      2. Check issue #XX's labels or body for project name
-                     3. Search for project branch: git branch -a | grep -E "project/.*/claude/issue-XX"
+                     3. Search for project branch: git branch -a | grep -E "project/.*-XX"
                      4. Extract project name from found branch
                  - git checkout project/{project-name}
                  - git pull origin project/{project-name}
-                 - git checkout -b project/{project-name}/claude/issue-${{ github.event.issue.number }}-{task-type}-phase1
+                 - git checkout -b project/{project-name}-${{ github.event.issue.number }}-phase1
                  - Examples:
-                   * [bugfix: #44] → branch: project/{name}/claude/issue-XX-bugfix-phase1
-                   * [enhance: #44] → branch: project/{name}/claude/issue-XX-enhance-phase1
-                   * [refactor: #44] → branch: project/{name}/claude/issue-XX-refactor-phase1
+                   * [bugfix: #44] → branch: project/{name}-XX-phase1
+                   * [enhance: #44] → branch: project/{name}-XX-phase1
+                   * [refactor: #44] → branch: project/{name}-XX-phase1
             
             5. For Phase 1 ONLY - MANDATORY PROJECT DIRECTORY:
                - Create project-specific directory with kebab-case naming
@@ -291,7 +291,7 @@ jobs:
             5. **レビューポイント**:
                - 各フェーズ完了時に`@claude-review-needed`タグを追加
                - 必ず現在のブランチ名を報告に含める
-               - 例: "Phase 2完了 | PR: #102 | Branch: project/pdf-compressor/claude/issue-24-phase2 @claude-review-needed"
+               - 例: "Phase 2完了 | PR: #102 | Branch: project/pdf-compressor-24-phase2 @claude-review-needed"
             
             6. **プロジェクト完了判定**:
                - Phase 4のPRがマージされたらプロジェクト完了
