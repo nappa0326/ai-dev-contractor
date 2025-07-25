@@ -1,0 +1,99 @@
+{
+  "name": "PR作成通知システム",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "github-pr-created",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "6084ef82-cb4d-453c-83b3-10acbeb362ef",
+      "name": "Webhook",
+      "webhookId": "bd5c7a7b-5c84-4779-a9c4-ace86fa817c4"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "  // GitHub Webhookからのデータを解析\n  const event = $json.body;\n\n  // PR情報を取得\n  const pr = event.pull_request;\n  const prNumber = pr.number;\n  const prTitle = pr.title;\n  const prUrl = pr.html_url;\n  const baseBranch = pr.base.ref;\n  const headBranch = pr.head.ref;\n\n  // ベースブランチからプロジェクト名を抽出\n  // 形式: project/{project-name}\n  let projectName = 'unknown';\n  const baseMatch = baseBranch.match(/^project\\/(.+)$/);\n  if (baseMatch) {\n    projectName = baseMatch[1];\n  }\n\n  // ヘッドブランチからIssue番号とフェーズを抽出\n  // 形式: project/{project-name}-{issue-number}-phase{N}\n  let issueNumber = null;\n  let phase = null;\n\n  const headMatch = headBranch.match(/^project\\/(.+)-(\\d+)-phase(\\d+)$/);\n  if (headMatch) {\n    issueNumber = headMatch[2];\n    phase = headMatch[3];\n  }\n\n  // 旧形式のサポート\n  if (!issueNumber) {\n    const oldMatch = headBranch.match(/^(.+)-(\\d+)-phase(\\d+)$/);\n    if (oldMatch) {\n      issueNumber = oldMatch[2];\n      phase = oldMatch[3];\n    }\n  }\n\n  // Issue URLを生成\n  const issueUrl = issueNumber ?\n    `https://github.com/${event.repository.full_name}/issues/${issueNumber}` :\n    null;\n\n  return {\n    json: {\n      pr_number: prNumber,\n      pr_title: prTitle,\n      pr_url: prUrl,\n      project_name: projectName,\n      issue_number: issueNumber,\n      issue_url: issueUrl,\n      phase: phase,\n      base_branch: baseBranch,\n      head_branch: headBranch,\n      repository: event.repository.full_name\n    }\n  };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "357ecdc7-16e3-4fa4-96cb-30505cd4823b",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C094LNGF8H5",
+          "mode": "id"
+        },
+        "messageType": "block",
+        "blocksUi": "=  {\n    \"blocks\": [\n      {\n        \"type\": \"header\",\n        \"text\": {\n          \"type\": \"plain_text\",\n          \"text\": \"🚀 PR作成完了！\",\n          \"emoji\": true\n        }\n      },\n      {\n        \"type\": \"section\",\n        \"text\": {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*PR*: <{{ $json.pr_url }}|#{{ $json.pr_number }} - {{ $json.pr_title }}>\\n*Issue*: {{ $json.issue_number ? '<' + $json.issue_url + '|#' + $json.issue_number + '>' : 'N/A' }}\\n*Project*: {{ $json.project_name }}\\n*Phase*: {{ $json.phase || 'N/A' }}\"\n        }\n      },\n      {\n        \"type\": \"divider\"\n      },\n      {\n        \"type\": \"context\",\n        \"elements\": [\n          {\n            \"type\": \"mrkdwn\",\n            \"text\": \"👉 レビューをお願いします\"\n          }\n        ]\n      }\n    ]\n  }",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        440,
+        0
+      ],
+      "id": "cc0b5680-e03f-46e9-a4dc-917d8df98749",
+      "name": "Send a message",
+      "webhookId": "0e8c0b56-bf40-4399-be5b-7fbcb542697c",
+      "credentials": {
+        "slackApi": {
+          "id": "aHC6dGXUUgCWfDpJ",
+          "name": "Slack account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "79a593a8-7f8f-4245-a185-a67490e3a637",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b9ad821e1bac462e0829b0fcfa0ee54572f5b3a4dad3925c8cb3c5dae1bcef22"
+  },
+  "id": "JabfS7KOVDyP9Pqa",
+  "tags": []
+}

@@ -1,0 +1,19 @@
+name: PR Create Webhook
+
+on:
+  pull_request:
+    types: [opened]
+    branches:
+      - 'project/**'
+
+jobs:
+  notify-n8n:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Send webhook to n8n
+        run: |
+          curl -X POST \
+            -H "Content-Type: application/json" \
+            -d '${{ toJson(github.event) }}' \
+            https://n8n.oppy-ai.com/webhook/github-pr-created
