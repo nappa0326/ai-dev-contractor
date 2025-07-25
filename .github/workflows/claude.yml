@@ -66,8 +66,8 @@ jobs:
             PHASE_NUMBER=$DETECTED_PHASE
           else
             # Detect phase from existing branches
-            # 新しいパターン: {project-name}-{issue-number}-phase{N}
-            EXISTING_PHASES=$(git branch -a | grep -E "remotes/origin/[^/]+-$ISSUE_NUMBER-phase[0-9]+" | grep -oE "phase[0-9]+" | grep -oE "[0-9]+" | sort -n | tail -1)
+            # 新しいパターン: project/{project-name}-{issue-number}-phase{N}
+            EXISTING_PHASES=$(git branch -a | grep -E "remotes/origin/project/[^-]+-$ISSUE_NUMBER-phase[0-9]+" | grep -oE "phase[0-9]+" | grep -oE "[0-9]+" | sort -n | tail -1)
             if [ -n "$EXISTING_PHASES" ]; then
               # If phases exist, we're continuing from the last phase
               PHASE_NUMBER=$((EXISTING_PHASES + 1))
@@ -77,8 +77,8 @@ jobs:
           echo "CLAUDE_PHASE_NUMBER=$PHASE_NUMBER" >> $GITHUB_ENV
           
           # Check for project branch pattern based on existing issue branches
-          # 新しいパターン: {project-name}-{issue-number}-phase{N}
-          PROJECT_NAME=$(git branch -a | grep -E "remotes/origin/[^/]+-$ISSUE_NUMBER-phase[0-9]+" | head -1 | sed -E "s|remotes/origin/([^-]+)-$ISSUE_NUMBER-phase[0-9]+|\1|" | xargs)
+          # 新しいパターン: project/{project-name}-{issue-number}-phase{N}
+          PROJECT_NAME=$(git branch -a | grep -E "remotes/origin/project/[^-]+-$ISSUE_NUMBER-phase[0-9]+" | head -1 | sed -E "s|remotes/origin/(project/[^-]+)-$ISSUE_NUMBER-phase[0-9]+|\1|" | xargs)
           
           if [ -n "$PROJECT_NAME" ]; then
             PROJECT_BRANCH="$PROJECT_NAME"
@@ -229,8 +229,8 @@ jobs:
             
             1. **ブランチ構造**:
                - システム設定: `master`（CLAUDE.md、workflowsのみ）
-               - プロジェクトメイン: `{project-name}`
-               - 作業ブランチ（Phase別）: `{project-name}-{issue-number}-phase{N}`
+               - プロジェクトメイン: `project/{project-name}`
+               - 作業ブランチ（Phase別）: `project/{project-name}-{issue-number}-phase{N}`
             
             2. **ブランチ確認手順**:
                CLAUDE.mdのブランチ管理手順セクションを参照してください。
