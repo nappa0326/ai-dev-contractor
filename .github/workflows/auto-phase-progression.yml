@@ -73,6 +73,17 @@ jobs:
         script: |
           const issueNumber = ${{ steps.phase_info.outputs.issue_number }};
           
+          // PRの本文を確認
+          const prNumber = context.payload.pull_request.number;
+          const pr = await github.rest.pulls.get({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            pull_number: prNumber
+          });
+          
+          const prBodyHasFinalStatus = /####\s*Final\s*Status:/i.test(pr.data.body || '');
+          console.log(`PR body has Final Status: ${prBodyHasFinalStatus}`);
+          
           // 最新のコメントを取得してFinal Statusを確認
           const comments = await github.rest.issues.listComments({
             owner: context.repo.owner,
@@ -86,12 +97,16 @@ jobs:
             .filter(c => c.user.login === 'claude[bot]')
             .reverse();
           
-          // Final Status:セクションがあるかチェック
-          const hasFinalStatus = claudeComments.some(comment => 
+          // Final Status:セクションがあるかチェック（Issueコメント）
+          const commentHasFinalStatus = claudeComments.some(comment => 
             /####\s*Final\s*Status:/i.test(comment.body)
           );
           
-          console.log(`Final Status found: ${hasFinalStatus}`);
+          // PR本文またはIssueコメントのいずれかにFinal Statusがあればtrue
+          const hasFinalStatus = prBodyHasFinalStatus || commentHasFinalStatus;
+          
+          console.log(`Issue comment has Final Status: ${commentHasFinalStatus}`);
+          console.log(`Final Status found (PR or comment): ${hasFinalStatus}`);
           return hasFinalStatus;
 
     - name: Post phase progression comment
