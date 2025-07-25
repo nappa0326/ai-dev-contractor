@@ -1,8 +1,9 @@
 name: Claude Code Review
 
 on:
-  pull_request:
-    types: [opened, synchronize]
+  workflow_dispatch:  # 手動実行のみに変更（一時的に自動実行を無効化）
+  # pull_request:
+  #   types: [opened, synchronize]
     # Optional: Only run on specific file changes
     # paths:
     #   - "src/**/*.ts"
