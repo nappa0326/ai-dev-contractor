@@ -139,7 +139,7 @@
           "mode": "id"
         },
         "messageType": "block",
-        "blocksUi": "=  {\n    \"blocks\": [\n      {\n        \"type\": \"header\",\n        \"text\": {\n          \"type\": \"plain_text\",\n          \"text\": \"📋 {{ $json.project_name }} - Phase {{ $json.phase }}完了\"\n        }\n      },\n      {\n        \"type\": \"section\",\n        \"text\": {\n          \"type\": \"mrkdwn\",\n          \"text\": \"Issue: <{{ $json.issue_url }}|#{{ $json.issue_number }}>\\n{{ $json.has_pr ? 'PR: <' + $json.pr_url + '|#' + $json.pr_number + '> 🆕' : 'PR: 作成待機中' }}\\nBranch: `{{ $json.branch_name }}`\\n進捗: {{ $json.phase == '1' ? '✅⬜⬜⬜ 設計完了 (25%)' : $json.phase == '2' ? '✅✅⬜⬜ MVP完了 (50%)' : $json.phase == '3' ? '✅✅✅⬜ 実装完了 (80%)' : '✅✅✅✅ 品質向上完了 (100%)' }}\"\n        }\n      },\n      {\n        \"type\": \"divider\"\n      },\n      {\n        \"type\": \"context\",\n        \"elements\": [\n          {\n            \"type\": \"mrkdwn\",\n            \"text\": \"👉 {{ $json.has_pr ? 'PRでレビューをお願いします' : 'PR作成をお待ちください' }}\"\n          }\n        ]\n      }\n    ]\n  }",
+        "blocksUi": "=  {\n    \"blocks\": [\n      {\n        \"type\": \"header\",\n        \"text\": {\n          \"type\": \"plain_text\",\n          \"text\": \"📋 {{ $json.project_name }} - Phase {{ $json.phase }}完了\"\n        }\n      },\n      {\n        \"type\": \"section\",\n        \"text\": {\n          \"type\": \"mrkdwn\",\n          \"text\": \"Issue: <{{ $json.issue_url }}|#{{ $json.issue_number }}>\\nBranch: `{{ $json.branch_name }}`\\n進捗: {{ $json.phase == '1' ? '✅⬜⬜⬜ 設計完了 (25%)' : $json.phase == '2' ? '✅✅⬜⬜ MVP完了 (50%)' : $json.phase == '3' ? '✅✅✅⬜ 実装完了 (80%)' : '✅✅✅✅ 品質向上完了 (100%)' }}\"\n        }\n      },\n      {\n        \"type\": \"divider\"\n      },\n      {\n        \"type\": \"context\",\n        \"elements\": [\n          {\n            \"type\": \"mrkdwn\",\n            \"text\": \"👉 フェーズ{{ $json.phase }}の作業が完了しました\"\n          }\n        ]\n      }\n    ]\n  }",
         "otherOptions": {}
       },
       "type": "n8n-nodes-base.slack",
@@ -247,7 +247,7 @@
     "callerPolicy": "workflowsFromSameOwner",
     "errorWorkflow": "V00wqOQfw5vs8CVQ"
   },
-  "versionId": "fb8deab8-ac5e-4e5d-ad62-bb5a3dd5516b",
+  "versionId": "7027b441-e6fd-42b0-aa7d-383aa4827a03",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "b9ad821e1bac462e0829b0fcfa0ee54572f5b3a4dad3925c8cb3c5dae1bcef22"
