@@ -1,0 +1,93 @@
+name: Basic Quality Check
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  basic-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Detect and setup environment
+        id: setup
+        run: |
+          # Node.js project
+          if [ -f "package.json" ]; then
+            echo "project_type=node" >> $GITHUB_OUTPUT
+            echo "::notice::Node.jsプロジェクトを検出"
+          # Python project
+          elif [ -f "requirements.txt" ] || [ -f "setup.py" ]; then
+            echo "project_type=python" >> $GITHUB_OUTPUT
+            echo "::notice::Pythonプロジェクトを検出"
+          # Go project
+          elif [ -f "go.mod" ]; then
+            echo "project_type=go" >> $GITHUB_OUTPUT
+            echo "::notice::Goプロジェクトを検出"
+          else
+            echo "project_type=unknown" >> $GITHUB_OUTPUT
+            echo "::warning::プロジェクトタイプを特定できません"
+          fi
+          
+      - name: Setup Node.js
+        if: steps.setup.outputs.project_type == 'node'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: Setup Python
+        if: steps.setup.outputs.project_type == 'python'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          
+      - name: Setup Go
+        if: steps.setup.outputs.project_type == 'go'
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          
+      - name: Try to build
+        id: build
+        continue-on-error: true
+        run: |
+          cd $(find . -name "package.json" -o -name "requirements.txt" -o -name "go.mod" | head -1 | xargs dirname)
+          
+          if [ "${{ steps.setup.outputs.project_type }}" == "node" ]; then
+            npm install && npm run build
+          elif [ "${{ steps.setup.outputs.project_type }}" == "python" ]; then
+            pip install -r requirements.txt || pip install .
+          elif [ "${{ steps.setup.outputs.project_type }}" == "go" ]; then
+            go build ./...
+          fi
+          
+      - name: Check for obvious security issues
+        run: |
+          # APIキーやパスワードのハードコードをチェック
+          if grep -r "api[_-]key.*=.*['\"].*['\"]" --exclude-dir=.git --exclude-dir=node_modules .; then
+            echo "::warning::APIキーがハードコードされている可能性があります"
+          fi
+          
+          if grep -r "password.*=.*['\"].*['\"]" --exclude-dir=.git --exclude-dir=node_modules .; then
+            echo "::warning::パスワードがハードコードされている可能性があります"
+          fi
+          
+      - name: Summary
+        if: always()
+        run: |
+          echo "## 🔍 品質チェック結果" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ steps.build.outcome }}" == "success" ]; then
+            echo "✅ ビルド: 成功" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ ビルド: 失敗" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**対処法**: ビルドエラーを修正してください" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "ℹ️ これは基本的なチェックです。詳細なレビューは人間が行います。" >> $GITHUB_STEP_SUMMARY
