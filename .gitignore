@@ -5,6 +5,7 @@ package-lock.json
 # Build outputs
 dist/
 dist-build/
+release/
 *.log
 
 # IDE
