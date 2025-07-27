@@ -1,0 +1,265 @@
+name: Auto Build and Deploy
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  detect-and-build:
+    if: |
+      github.event.pull_request.merged == true &&
+      contains(github.event.pull_request.body, 'Final Status:') &&
+      contains(github.event.pull_request.body, 'PROJECT COMPLETED')
+    
+    runs-on: ubuntu-latest
+    
+    outputs:
+      project_type: ${{ steps.detect.outputs.type }}
+      project_name: ${{ steps.extract.outputs.name }}
+      project_dir: ${{ steps.detect.outputs.dir }}
+      should_deploy_web: ${{ steps.detect.outputs.deploy_web }}
+      should_build_desktop: ${{ steps.detect.outputs.build_desktop }}
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+          
+      - name: Extract project info
+        id: extract
+        run: |
+          # プロジェクト名をブランチ名から抽出
+          BRANCH_NAME="${{ github.event.pull_request.head.ref }}"
+          PROJECT_NAME=$(echo "$BRANCH_NAME" | sed 's/project\/\([^-]*\).*/\1/')
+          echo "name=$PROJECT_NAME" >> $GITHUB_OUTPUT
+          echo "Project name: $PROJECT_NAME"
+          
+      - name: Detect project type
+        id: detect
+        run: |
+          # プロジェクトディレクトリを探す
+          PROJECT_DIRS=$(find . -type f \( -name "package.json" -o -name "requirements.txt" -o -name "go.mod" \) | xargs -I {} dirname {} | sort -u)
+          
+          # 最初に見つかったプロジェクトディレクトリを使用
+          PROJECT_DIR=$(echo "$PROJECT_DIRS" | head -1)
+          echo "dir=$PROJECT_DIR" >> $GITHUB_OUTPUT
+          
+          if [ -z "$PROJECT_DIR" ]; then
+            echo "No project files found"
+            exit 1
+          fi
+          
+          cd "$PROJECT_DIR"
+          echo "Checking directory: $(pwd)"
+          
+          # プロジェクトタイプを検出
+          if [ -f "package.json" ]; then
+            # Node.js系プロジェクト
+            if grep -q '"electron"' package.json; then
+              echo "type=electron-app" >> $GITHUB_OUTPUT
+              echo "build_desktop=true" >> $GITHUB_OUTPUT
+              echo "deploy_web=false" >> $GITHUB_OUTPUT
+            elif grep -q '"next"' package.json; then
+              echo "type=nextjs-web" >> $GITHUB_OUTPUT
+              echo "build_desktop=false" >> $GITHUB_OUTPUT
+              echo "deploy_web=true" >> $GITHUB_OUTPUT
+            elif grep -q '"react"' package.json && [ -f "public/index.html" ]; then
+              echo "type=react-spa" >> $GITHUB_OUTPUT
+              echo "build_desktop=false" >> $GITHUB_OUTPUT
+              echo "deploy_web=true" >> $GITHUB_OUTPUT
+            elif [ -f "bin/"* ] || grep -q '"bin"' package.json; then
+              echo "type=node-cli" >> $GITHUB_OUTPUT
+              echo "build_desktop=true" >> $GITHUB_OUTPUT
+              echo "deploy_web=false" >> $GITHUB_OUTPUT
+            else
+              echo "type=node-app" >> $GITHUB_OUTPUT
+              echo "build_desktop=false" >> $GITHUB_OUTPUT
+              echo "deploy_web=false" >> $GITHUB_OUTPUT
+            fi
+          elif [ -f "requirements.txt" ]; then
+            # Python系プロジェクト
+            if grep -q -E "flask|django|fastapi|streamlit" requirements.txt; then
+              echo "type=python-web" >> $GITHUB_OUTPUT
+              echo "build_desktop=false" >> $GITHUB_OUTPUT
+              echo "deploy_web=true" >> $GITHUB_OUTPUT
+            else
+              echo "type=python-app" >> $GITHUB_OUTPUT
+              echo "build_desktop=true" >> $GITHUB_OUTPUT
+              echo "deploy_web=false" >> $GITHUB_OUTPUT
+            fi
+          elif [ -f "go.mod" ]; then
+            echo "type=go-app" >> $GITHUB_OUTPUT
+            echo "build_desktop=true" >> $GITHUB_OUTPUT
+            echo "deploy_web=false" >> $GITHUB_OUTPUT
+          else
+            echo "type=unknown" >> $GITHUB_OUTPUT
+            echo "build_desktop=false" >> $GITHUB_OUTPUT
+            echo "deploy_web=false" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Show detection results
+        run: |
+          echo "Project Type: ${{ steps.detect.outputs.type }}"
+          echo "Project Directory: ${{ steps.detect.outputs.dir }}"
+          echo "Should Deploy Web: ${{ steps.detect.outputs.deploy_web }}"
+          echo "Should Build Desktop: ${{ steps.detect.outputs.build_desktop }}"
+
+  # デスクトップアプリのビルド
+  build-desktop:
+    needs: detect-and-build
+    if: needs.detect-and-build.outputs.should_build_desktop == 'true'
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+          - os: windows-latest
+            platform: windows
+          - os: macos-latest
+            platform: mac
+            
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+          
+      - name: Setup Node.js
+        if: contains(needs.detect-and-build.outputs.project_type, 'node') || contains(needs.detect-and-build.outputs.project_type, 'electron')
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: Setup Python
+        if: contains(needs.detect-and-build.outputs.project_type, 'python')
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          
+      - name: Setup Go
+        if: contains(needs.detect-and-build.outputs.project_type, 'go')
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          
+      - name: Build project
+        id: build
+        working-directory: ${{ needs.detect-and-build.outputs.project_dir }}
+        run: |
+          PROJECT_TYPE="${{ needs.detect-and-build.outputs.project_type }}"
+          PROJECT_NAME="${{ needs.detect-and-build.outputs.project_name }}"
+          
+          case "$PROJECT_TYPE" in
+            "electron-app")
+              npm install
+              if [ "${{ matrix.platform }}" == "windows" ]; then
+                npm run electron:build -- --win
+              elif [ "${{ matrix.platform }}" == "mac" ]; then
+                npm run electron:build -- --mac
+              else
+                npm run electron:build -- --linux
+              fi
+              ;;
+              
+            "node-cli")
+              npm install
+              npm run build || echo "No build script"
+              npx pkg . -t node18-${{ matrix.platform }}-x64 -o dist/${PROJECT_NAME}-${{ matrix.platform }}
+              ;;
+              
+            "python-app")
+              pip install -r requirements.txt
+              pip install pyinstaller
+              if [ "${{ matrix.platform }}" == "windows" ]; then
+                pyinstaller --onefile --name ${PROJECT_NAME}.exe main.py || pyinstaller --onefile --name ${PROJECT_NAME}.exe app.py
+              else
+                pyinstaller --onefile --name ${PROJECT_NAME}-${{ matrix.platform }} main.py || pyinstaller --onefile --name ${PROJECT_NAME}-${{ matrix.platform }} app.py
+              fi
+              ;;
+              
+            "go-app")
+              if [ "${{ matrix.platform }}" == "windows" ]; then
+                GOOS=windows GOARCH=amd64 go build -o ${PROJECT_NAME}.exe
+              elif [ "${{ matrix.platform }}" == "mac" ]; then
+                GOOS=darwin GOARCH=amd64 go build -o ${PROJECT_NAME}-mac
+              else
+                GOOS=linux GOARCH=amd64 go build -o ${PROJECT_NAME}-linux
+              fi
+              ;;
+          esac
+          
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ needs.detect-and-build.outputs.project_name }}-${{ matrix.platform }}
+          path: |
+            ${{ needs.detect-and-build.outputs.project_dir }}/dist/*
+            ${{ needs.detect-and-build.outputs.project_dir }}/*.exe
+            ${{ needs.detect-and-build.outputs.project_dir }}/*.app
+            ${{ needs.detect-and-build.outputs.project_dir }}/*.AppImage
+            ${{ needs.detect-and-build.outputs.project_dir }}/*.dmg
+            ${{ needs.detect-and-build.outputs.project_dir }}/*-linux
+            ${{ needs.detect-and-build.outputs.project_dir }}/*-mac
+            ${{ needs.detect-and-build.outputs.project_dir }}/*-windows
+
+  # Webアプリのデプロイ
+  deploy-web:
+    needs: detect-and-build
+    if: needs.detect-and-build.outputs.should_deploy_web == 'true'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+          
+      - name: Deploy to platform
+        working-directory: ${{ needs.detect-and-build.outputs.project_dir }}
+        run: |
+          echo "Web deployment is not yet implemented"
+          echo "Project type: ${{ needs.detect-and-build.outputs.project_type }}"
+          # TODO: Vercel, Netlify, Render等へのデプロイ実装
+
+  # GitHub Releaseの作成
+  create-release:
+    needs: [detect-and-build, build-desktop]
+    if: always() && needs.detect-and-build.result == 'success'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Download all artifacts
+        if: needs.detect-and-build.outputs.should_build_desktop == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+          
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.detect-and-build.outputs.project_name }}-v1.0.0
+          name: ${{ needs.detect-and-build.outputs.project_name }} v1.0.0
+          body: |
+            # ${{ needs.detect-and-build.outputs.project_name }}
+            
+            プロジェクトタイプ: ${{ needs.detect-and-build.outputs.project_type }}
+            
+            ## ダウンロード
+            
+            ビルド済みファイルは下記からダウンロードできます。
+            
+          files: |
+            artifacts/**/*
+          draft: false
+          prerelease: false
+          
+      - name: Notify completion
+        run: |
+          echo "Build and release completed for ${{ needs.detect-and-build.outputs.project_name }}"
+          # TODO: Slack通知の実装
