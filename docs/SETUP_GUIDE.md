@@ -129,7 +129,35 @@ n8n-workflows/
 └── エラー通知システム.json
 ```
 
-#### 2-2. Webhook URLの更新
+#### 2-2. ワークフローのカスタマイズ（重要）
+
+インポート後、以下の値を**あなたの環境に合わせて変更**してください：
+
+##### A. GitHubリポジトリ情報の変更
+
+**対象ワークフロー**:
+- `AI開発会社 - プロジェクト受注システム`
+- `Github PR監視システム`
+
+**変更箇所**:
+
+1. **AI開発会社 - プロジェクト受注システム**
+   - `Code` ノード内のJavaScriptコード
+   - 検索: `nappa0326`
+   - 置換: `あなたのGitHubユーザー名`
+   - 該当箇所: `assignees: ['nappa0326']` (2箇所)
+
+   - `HTTP Request - Create an issue` ノードのURL
+   - 変更前: `https://api.github.com/repos/nappa0326/ai-development-company/issues`
+   - 変更後: `https://api.github.com/repos/YOUR_USERNAME/YOUR_REPO/issues`
+
+2. **Github PR監視システム**
+   - `Code` ノード内のJavaScriptコード
+   - 検索: `nappa0326/ai-development-company`
+   - 置換: `あなたのGitHubユーザー名/リポジトリ名`
+   - 該当箇所: ``https://github.com/nappa0326/ai-development-company/pull/${prNumber}``
+
+##### B. Webhook URLの更新
 
 各ワークフローで以下のURLを**あなたのn8n URL**に書き換えてください：
 
