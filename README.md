@@ -5,6 +5,8 @@ AIが開発案件を自動で請け負い、フェーズごとに段階的に実
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Setup Guide](https://img.shields.io/badge/docs-setup_guide-blue.svg)](docs/SETUP_GUIDE.md)
 
+> ⚠️ **セットアップが必要です**: このリポジトリを使用する場合、[SETUP_GUIDE.md](docs/SETUP_GUIDE.md)の手順に従って環境変数とワークフローの設定を行ってください。
+
 ## 概要
 
 このシステムは、GitHub Issues、Slack、n8nを連携させて、Claude CodeによるAI開発を自動化します。
