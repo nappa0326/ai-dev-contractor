@@ -24,7 +24,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        220,
+        224,
         0
       ],
       "id": "72e41c27-a74c-40e2-8f98-30a1faa173e3",
@@ -57,7 +57,7 @@
       "type": "n8n-nodes-base.filter",
       "typeVersion": 2.2,
       "position": [
-        440,
+        448,
         0
       ],
       "id": "41ce358b-6fe1-4132-a86b-69ab472c82a6",
@@ -68,7 +68,7 @@
         "select": "channel",
         "channelId": {
           "__rl": true,
-          "value": "C094LNGF8H5",
+          "value": "=={{ $env.SLACK_CHANNEL_ID }}",
           "mode": "id"
         },
         "text": "=🔄 Phase {{ $('Code').item.json.next_phase }}を自動開始しました\n   プロジェクト: {{ $('Code').item.json.project_name }}\n   Issue: #{{ $('Code').item.json.issue_number }}\n   前フェーズPR: #{{ $('Code').item.json.pr_number }} がマージされました",
@@ -77,7 +77,7 @@
       "type": "n8n-nodes-base.slack",
       "typeVersion": 2.3,
       "position": [
-        660,
+        672,
         0
       ],
       "id": "4853d38b-4a84-4228-9194-c883e089c3e7",
@@ -131,7 +131,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "6e96ba8f-edb0-4aab-af5e-2f955a17ba4c",
+  "versionId": "40471aad-b07b-4f5f-a2e3-2349e6edf529",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "b9ad821e1bac462e0829b0fcfa0ee54572f5b3a4dad3925c8cb3c5dae1bcef22"

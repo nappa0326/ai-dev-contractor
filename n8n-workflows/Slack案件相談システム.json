@@ -8,7 +8,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        440,
+        448,
         0
       ],
       "id": "64b7df1a-7257-4901-857a-a43abc0098c2",
@@ -25,7 +25,7 @@
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 2,
       "position": [
-        660,
+        672,
         0
       ],
       "id": "264c37d7-5d90-4746-91ec-4b43093bb669",
@@ -39,8 +39,8 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
       "typeVersion": 1,
       "position": [
-        600,
-        200
+        608,
+        208
       ],
       "id": "28357a4d-4be6-4904-a4a2-796ab6d37182",
       "name": "Google Gemini Chat Model",
@@ -62,7 +62,7 @@
       "type": "n8n-nodes-base.slackTrigger",
       "typeVersion": 1,
       "position": [
-        220,
+        224,
         0
       ],
       "id": "a6a56487-cba2-466f-804b-3e48a04aae5a",
@@ -84,8 +84,8 @@
       "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
       "typeVersion": 1.3,
       "position": [
-        740,
-        200
+        752,
+        208
       ],
       "id": "b6631124-21f5-49d3-9d91-ca446a0795da",
       "name": "Simple Memory"

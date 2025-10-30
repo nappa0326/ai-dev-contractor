@@ -23,7 +23,7 @@
         "select": "channel",
         "channelId": {
           "__rl": true,
-          "value": "C094LNGF8H5",
+          "value": "=={{ $env.SLACK_CHANNEL_ID }}",
           "mode": "id"
         },
         "text": "={{ $('Webhook').item.json.body.command_type === 'extend' ? '🔧 継続開発タスク受注！\\n\\n**タスクタイプ**: ' + $('Webhook').item.json.body.task_type + '\\n**元のIssue**: #' + $('Webhook').item.json.body.original_issue_number + '\\n**作業内容**: ' + $('Webhook').item.json.body.description + '\\n**GitHub Issue**: ' + $('HTTP Request - Create an issue').item.json.html_url + '\\n\\nClaude Code による開発を開始します。' : '🚀  新規プロジェクト受注！\\n\\n**プロジェクト名**: ' + $('Webhook').item.json.body.project_name + '\\n**予算**: ' + $('Webhook').item.json.body.budget + '\\n**期限**: ' + $('Webhook').item.json.body.deadline + '\\n**GitHub Issue**: ' + $('HTTP Request - Create an issue').item.json.html_url + '\\n\\nClaude Code による自動開発を開始します。' }}",
@@ -32,7 +32,7 @@
       "type": "n8n-nodes-base.slack",
       "typeVersion": 2.3,
       "position": [
-        940,
+        944,
         0
       ],
       "id": "1c071c7b-f85c-4aaf-ae43-618ba555155c",
@@ -54,7 +54,7 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        1140,
+        1152,
         0
       ],
       "id": "13fc1abd-4530-4034-96f1-7b9a71c8bfb8",
@@ -71,7 +71,7 @@
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 2,
       "position": [
-        200,
+        208,
         0
       ],
       "id": "8998a0ab-35cc-443a-b5c8-0c4e4118e277",
@@ -89,7 +89,7 @@
       "typeVersion": 1,
       "position": [
         80,
-        220
+        224
       ],
       "id": "1f1777ac-ccb9-4b2e-8bee-a9331e510399",
       "name": "Google Gemini Chat Model1",
@@ -110,7 +110,7 @@
       "typeVersion": 1.3,
       "position": [
         240,
-        220
+        224
       ],
       "id": "75c71d0c-372b-4e6d-ad81-b158e78c0186",
       "name": "Simple Memory"
@@ -122,7 +122,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        540,
+        544,
         0
       ],
       "id": "5e1b19fd-31c6-4ba1-8ab5-9fb6e6223bda",
@@ -151,7 +151,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        740,
+        752,
         0
       ],
       "id": "e631f587-a482-479f-b902-ab98b94b1ed4",
@@ -250,7 +250,7 @@
     "callerPolicy": "workflowsFromSameOwner",
     "errorWorkflow": "V00wqOQfw5vs8CVQ"
   },
-  "versionId": "170bd631-0890-4824-91d5-c6a0f51d5053",
+  "versionId": "4d6fbe38-f458-45fe-abf2-807c7eba60dc",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "b9ad821e1bac462e0829b0fcfa0ee54572f5b3a4dad3925c8cb3c5dae1bcef22"

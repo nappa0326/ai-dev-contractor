@@ -25,7 +25,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        220,
+        224,
         0
       ],
       "id": "98f6b085-3151-47af-9b44-4d8caddfd425",
@@ -58,7 +58,7 @@
       "type": "n8n-nodes-base.filter",
       "typeVersion": 2.2,
       "position": [
-        440,
+        448,
         0
       ],
       "id": "7e8e3f38-0146-446f-bb93-8e545120ab72",
@@ -124,7 +124,7 @@
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
       "position": [
-        660,
+        672,
         0
       ],
       "id": "43fec369-d758-4f2e-926e-0c23cf51676b",
@@ -135,7 +135,7 @@
         "select": "channel",
         "channelId": {
           "__rl": true,
-          "value": "C094LNGF8H5",
+          "value": "=={{ $env.SLACK_CHANNEL_ID }}",
           "mode": "id"
         },
         "messageType": "block",
@@ -145,7 +145,7 @@
       "type": "n8n-nodes-base.slack",
       "typeVersion": 2.3,
       "position": [
-        940,
+        944,
         -80
       ],
       "id": "cf156cf2-fd7a-4edf-9b8f-8f7043da1cd6",
@@ -163,7 +163,7 @@
         "select": "channel",
         "channelId": {
           "__rl": true,
-          "value": "C094LNGF8H5",
+          "value": "=={{ $env.SLACK_CHANNEL_ID }}",
           "mode": "id"
         },
         "messageType": "block",
@@ -173,8 +173,8 @@
       "type": "n8n-nodes-base.slack",
       "typeVersion": 2.3,
       "position": [
-        940,
-        100
+        944,
+        112
       ],
       "id": "697ebc3d-6c53-44d3-b3d1-bf897b9f4f4e",
       "name": "Send a message - Completion",
@@ -247,7 +247,7 @@
     "callerPolicy": "workflowsFromSameOwner",
     "errorWorkflow": "V00wqOQfw5vs8CVQ"
   },
-  "versionId": "7027b441-e6fd-42b0-aa7d-383aa4827a03",
+  "versionId": "0b0b78a5-f864-4f36-a388-911cda052aab",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "b9ad821e1bac462e0829b0fcfa0ee54572f5b3a4dad3925c8cb3c5dae1bcef22"

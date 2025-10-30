@@ -6,8 +6,8 @@
       "type": "n8n-nodes-base.errorTrigger",
       "typeVersion": 1,
       "position": [
-        440,
-        60
+        448,
+        64
       ],
       "id": "aa75ec56-2727-4a9c-a393-aee3a1ce57fc",
       "name": "Error Trigger"
@@ -20,14 +20,14 @@
         "nodeCredentialType": "slackApi",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "=  {\n    \"channel\": \"C094LNGF8H5\",\n    \"text\": \"⚠️ ワークフローエラーが発生しました\",\n    \"blocks\": [\n      {\n        \"type\": \"section\",\n        \"text\": {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*ワークフロー名:* {{ $json.workflow?.name || '不明' }}\\n*エラーメッセージ:* {{ $json.execution?.error?.message || $json.error?.message || '詳細不明' }}\\n*実行ID:* {{ $json.execution?.id || '不明' }}\"\n        }\n      }\n    ]\n  }",
+        "jsonBody": "=  {\n    \"channel\": \"={{ $env.SLACK_CHANNEL_ID }}\",\n    \"text\": \"⚠️ ワークフローエラーが発生しました\",\n    \"blocks\": [\n      {\n        \"type\": \"section\",\n        \"text\": {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*ワークフロー名:* {{ $json.workflow?.name || '不明' }}\\n*エラーメッセージ:* {{ $json.execution?.error?.message || $json.error?.message || '詳細不明' }}\\n*実行ID:* {{ $json.execution?.id || '不明' }}\"\n        }\n      }\n    ]\n  }",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        660,
-        60
+        672,
+        64
       ],
       "id": "3933cf9f-fbc3-4f18-ba3b-fc82dea5f192",
       "name": "Slack Notification",
@@ -57,7 +57,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "05746b2a-615b-49ea-9b59-b7f639126ea2",
+  "versionId": "71d5cce3-ccde-4d62-b164-0649c9cd49c1",
   "meta": {
     "instanceId": "b9ad821e1bac462e0829b0fcfa0ee54572f5b3a4dad3925c8cb3c5dae1bcef22"
   },
