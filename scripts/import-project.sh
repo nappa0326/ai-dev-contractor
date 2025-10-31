@@ -155,10 +155,19 @@ COMMIT_MESSAGE=$(git log -1 --pretty=%B)
 COMMIT_AUTHOR=$(git log -1 --pretty="%an <%ae>")
 COMMIT_DATE=$(git log -1 --pretty=%ai)
 
-# 開発請負AIリポジトリのクローン
+# 開発請負AIリポジトリのクローン（現在のリポジトリから取得）
 echo -e "\n${BLUE}📥 開発請負AIリポジトリをクローン中...${NC}"
 cd "$TEMP_DIR"
-git clone https://github.com/nappa0326/ai-development-company.git target || {
+
+# 現在のリポジトリのリモートURLを取得
+CURRENT_REPO=$(git -C "$SCRIPT_DIR/.." config --get remote.origin.url 2>/dev/null || echo "")
+if [[ -z "$CURRENT_REPO" ]]; then
+    echo -e "${RED}エラー: リモートリポジトリのURLを取得できませんでした${NC}"
+    echo -e "${YELLOW}このスクリプトはGitリポジトリ内で実行する必要があります${NC}"
+    exit 1
+fi
+
+git clone "$CURRENT_REPO" target || {
     echo -e "${RED}エラー: 開発請負AIリポジトリのクローンに失敗しました${NC}"
     exit 1
 }
@@ -307,8 +316,14 @@ $COMMIT_MESSAGE
 EOF
 )
 
+# リポジトリ情報を自動取得
+REPO_INFO=$(git config --get remote.origin.url | sed -n 's/.*github\.com[:/]\(.*\)\.git.*/\1/p')
+if [[ -z "$REPO_INFO" ]]; then
+    REPO_INFO=$(git config --get remote.origin.url | sed -n 's/.*github\.com[:/]\(.*\)/\1/p')
+fi
+
 ISSUE_URL=$(gh issue create \
-    --repo nappa0326/ai-development-company \
+    --repo "$REPO_INFO" \
     --title "[Import] $PROJECT_NAME - 既存プロジェクトのインポート" \
     --body "$ISSUE_BODY") || {
     echo -e "${RED}エラー: Issue作成に失敗しました${NC}"

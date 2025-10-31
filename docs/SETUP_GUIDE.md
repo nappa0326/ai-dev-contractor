@@ -48,7 +48,7 @@
 
 ```bash
 # ブラウザでForkするか、テンプレートとして使用
-https://github.com/nappa0326/ai-development-company
+# GitHubでこのリポジトリを開き、右上の「Fork」または「Use this template」をクリック
 ```
 
 #### 1-2. ローカルにクローン
@@ -437,11 +437,9 @@ Recent Deliveriesからエラー内容を確認。
 
 問題が解決しない場合：
 
-1. [GitHub Issues](https://github.com/nappa0326/ai-development-company/issues)で質問
-2. ドキュメントを確認：
-   - [Slack App設定](slack-app-interactive-setup.md)
-   - [n8n Webhook設定](n8n-github-pr-webhook-setup.md)
-   - [実装手順書](実装手順書.md)
+1. GitHub Issuesで質問
+2. このセットアップガイドの関連セクションを再確認
+3. n8nワークフローのログを確認してエラーメッセージを特定
 
 ---
 

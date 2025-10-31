@@ -166,10 +166,24 @@ cd "$TEMP_DIR/$NEW_REPO_NAME"
 
 if [[ ! -f "README.md" ]]; then
     echo -e "\n${BLUE}📝 README.mdを作成中...${NC}"
+
+    # 元のリポジトリ情報を取得
+    ORIGIN_REMOTE=$(git config --get remote.origin.url 2>/dev/null || echo "")
+    if [[ -n "$ORIGIN_REMOTE" ]]; then
+        # GitHub URLから owner/repo を抽出
+        REPO_INFO=$(echo "$ORIGIN_REMOTE" | sed -n 's/.*github\.com[:/]\(.*\)\.git.*/\1/p')
+        if [[ -z "$REPO_INFO" ]]; then
+            REPO_INFO=$(echo "$ORIGIN_REMOTE" | sed -n 's/.*github\.com[:/]\(.*\)/\1/p')
+        fi
+        ORIGIN_LINK="[ai-development-company](https://github.com/$REPO_INFO)"
+    else
+        ORIGIN_LINK="ai-development-company システム"
+    fi
+
     cat > README.md << EOF
 # $NEW_REPO_NAME
 
-このプロジェクトは [ai-development-company](https://github.com/nappa0326/ai-development-company) の \`$PROJECT_DIR\` ディレクトリからエクスポートされました。
+このプロジェクトは $ORIGIN_LINK の \`$PROJECT_DIR\` ディレクトリからエクスポートされました。
 
 ## エクスポート情報
 - エクスポート日時: $(date)
