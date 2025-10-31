@@ -166,9 +166,18 @@ Phase 4 (100%) → 品質向上・ドキュメント整備
 
 自動ビルド・実行スクリプトが以下のプロジェクトタイプに対応：
 
-- Node.js (package.json)
-- Python (requirements.txt, setup.py, pyproject.toml)
-- Go (go.mod)
+### 完全対応
+- **Node.js** (package.json)
+  - Electronデスクトップアプリ
+  - Next.js Webアプリ
+  - React SPA
+  - CLIツール
+- **Python** (requirements.txt, setup.py, pyproject.toml)
+  - Flask/Django/FastAPI/Streamlit
+  - デスクトップ/CLIアプリ
+- **Go** (go.mod)
+
+### 今後対応予定
 - Rust (Cargo.toml)
 - Java/Maven (pom.xml)
 - Java/Gradle (build.gradle)
