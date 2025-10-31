@@ -66,8 +66,16 @@ cd ai-development-company
 |---------|------|---------|
 | `CLAUDE_CODE_OAUTH_TOKEN` | Claude Code認証トークン | [Claude Code設定](https://claude.com/claude-code/settings)から取得 |
 | `PAT_WITH_REPO_SCOPE` | GitHub Personal Access Token | [GitHub Settings](https://github.com/settings/tokens) → repo権限を付与 |
+| `N8N_PHASE_PROGRESSION_WEBHOOK_URL` | n8nフェーズ進行Webhook URL | n8nで`github-phase-progression` Webhookを作成後、URLをコピー |
+| `N8N_PR_CREATED_WEBHOOK_URL` | n8n PR作成通知Webhook URL | n8nで`github-pr-created` Webhookを作成後、URLをコピー |
+| `N8N_PR_MERGED_WEBHOOK_URL` | n8n PRマージ通知Webhook URL | n8nで`github-pr-merged` Webhookを作成後、URLをコピー |
 
 **GITHUB_TOKEN**は自動的に提供されるため、設定不要です。
+
+**n8n Webhook URLの取得方法**:
+1. n8nでワークフローをインポート後、各Webhookノードを開く
+2. 「Test URL」または「Production URL」をコピー
+3. GitHub Secretsに設定
 
 ---
 

@@ -12,8 +12,10 @@ jobs:
     
     steps:
       - name: Send webhook to n8n
+        env:
+          N8N_WEBHOOK_URL: ${{ secrets.N8N_PR_CREATED_WEBHOOK_URL }}
         run: |
           curl -X POST \
             -H "Content-Type: application/json" \
             -d '${{ toJson(github.event) }}' \
-            https://n8n.oppy-ai.com/webhook/github-pr-created
+            "${N8N_WEBHOOK_URL}"

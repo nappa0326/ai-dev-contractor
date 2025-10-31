@@ -169,9 +169,11 @@ jobs:
 
     - name: Notify n8n webhook
       if: steps.phase_info.outputs.is_phase_branch == 'true'
+      env:
+        N8N_WEBHOOK_URL: ${{ secrets.N8N_PHASE_PROGRESSION_WEBHOOK_URL }}
       run: |
         # n8nのWebhookを呼び出してSlack通知（オプション）
-        WEBHOOK_URL="https://n8n.oppy-ai.com/webhook/github-phase-progression"
+        WEBHOOK_URL="${N8N_WEBHOOK_URL}"
         
         # Final Statusの有無を判定
         IS_FINAL="${{ steps.final_check.outputs.result }}"
