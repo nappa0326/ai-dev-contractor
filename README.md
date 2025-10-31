@@ -161,13 +161,6 @@ Phase 4 (100%) → 品質向上・ドキュメント整備
 
 - **[セットアップガイド](docs/SETUP_GUIDE.md)** - 詳細なインストール手順
 - **[CLAUDE.md](CLAUDE.md)** - Claude Code用の開発ガイドライン
-- **[実装手順書](docs/実装手順書.md)** - システム実装の詳細
-
-### 設定ガイド
-
-- [Slack App設定](docs/slack-app-interactive-setup.md)
-- [n8n Webhook設定](docs/n8n-github-pr-webhook-setup.md)
-- [GitHub Webhook設定](docs/n8n-github-pr-webhook-setup.md)
 
 ## 対応プロジェクトタイプ
 
@@ -227,7 +220,7 @@ A: すべてのトークンとキーはGitHub Secretsまたはn8nの認証情報
 ### Q: サポートはありますか？
 
 A: コミュニティベースのサポートです。
-[GitHub Issues](https://github.com/nappa0326/ai-development-company/issues)で質問してください。
+GitHub Issuesで質問してください。
 
 ### Q: 商用利用は可能ですか？
 
